@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a reproducible GasDeck problem
+title: "[Bug]: "
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Radio, ETHOS and GasDeck versions
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Physical radio / live telemetry
+        - ETHOS Simulator / synthetic sources
+        - Synthetic preview
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps, expected and actual result
+      description: Include source units. Do not upload private model files, logs or personal details.
+    validations:
+      required: true
