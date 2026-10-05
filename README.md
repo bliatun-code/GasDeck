@@ -2,7 +2,9 @@
 
 A full-screen receiver-power, gasoline-engine and fuel dashboard for FrSky ETHOS.
 
-**Development snapshot: 2026.10-dev2. Physical-radio testing passed, reported by the owner on 2026-10-05. No GasDeck release is published yet.**
+**GasDeck 2026.10-v1: first release. The owner confirmed physical X20RS radio testing of the final RC1 build on 2026-10-05.**
+
+[Download GasDeck-2026.10-v1.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v1/GasDeck-2026.10-v1.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v1)
 
 ![GasDeck: RPM, temperatures, dual RX batteries and fuel](docs/images/gasdeck-single-engine.png)
 
@@ -36,19 +38,16 @@ Multi-engine and multi-temperature variants are hypothetical examples, not its a
 - Per-model counter, retained last flight and optional delayed automatic log opening.
 - Theme, black or custom background; no bundled runtime artwork, fonts, sounds or bytecode.
 
-## Install this development snapshot
+## Install GasDeck
 
-1. Download the repository using **Code > Download ZIP**, or obtain the readable [Lua source](scripts/GasDeck/main.lua).
-2. Copy only its `scripts/GasDeck` folder to the radio SD card. The final path must be `scripts/GasDeck/main.lua`, not a nested repository folder.
-3. Restart ETHOS and select **GasDeck** in a full-screen widget area.
-4. Configure actual model sensors, capacities, ignition and fuel method.
-5. Turn **Synthetic preview** off before live measurement, alarm or flight-count checks.
+1. Download [GasDeck-2026.10-v1.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v1/GasDeck-2026.10-v1.zip) from the release assets, not GitHub's automatic source archive.
+2. Extract `scripts/GasDeck` onto the radio SD card; the final path is `scripts/GasDeck/main.lua`.
+3. Remove stale `main.luac`, restart ETHOS and select **GasDeck** in a full-screen widget area.
+4. Configure actual sources, capacities, ignition and fuel method. Turn **Synthetic preview** off for live operation.
 
-Keep existing `gc*.cfg` and `gd*.dat` files when upgrading. If stale `main.luac`
-remains, remove only that generated file; ETHOS compiles the Lua on the target itself.
-Do not install documentation, private helpers or another radio's settings.
-A future release will be a named **GasDeck ZIP** containing the widget folder.
-There is intentionally no release tag or release download link yet.
+**Upgrade warning:** This major version deliberately does not import old scalar settings. Back up the model and its cfg/dat files. Reconfigure capacity, chemistry, limits, alarms and flight options. New settings use `/scripts/vc3*.cfg` (VoltDeck) or `/scripts/gc1*.cfg` (GasDeck). Existing flight-counter files and current ordered ETHOS source assignments are retained; verify every source. Old cfg files are left untouched. Remove the old matching `main.luac` before restarting ETHOS.
+
+The ZIP contains Lua, installation instructions, license and notices. No private helpers, settings, model records or bytecode are included.
 
 ## Ignition and sorties
 
@@ -70,11 +69,14 @@ radio restart; graphs/summary stay in RAM. Automatic log opening defaults Off.
 
 ## Testing, safety and publication
 
-Owner-reported physical-radio testing passed on 2026-10-05. Simulator target: X20RS,
-ETHOS 26.1.2 / FrSky Suite 2.0.1. Earlier functional development passed 60 automated
-regression cases and 44 native simulator cases. Gallery data are synthetic, not AES II
-calibration or universal hardware compatibility. Keep native alarms, failsafe,
-pre-flight checks and physical ignition safety enabled.
+The owner confirmed physical X20RS radio testing of the final RC1 builds on 2026-10-05. The shared final check passed 252 named automated checks; the preceding native ETHOS 26.1.2 simulator run passed 84 functional cases and 120 production-rendered frames. Counts cover both widgets, not 252 cases per widget. This is a project test report, not universal hardware compatibility or safety certification.
+
+Simulator target: X20RS / ETHOS 26.1.2 / FrSky Suite 2.0.1. Gallery data are
+synthetic, not AES II calibration. Keep native alarms, failsafe, pre-flight
+checks and physical ignition safety enabled.
+
+The release is based on the physically tested 2026.10-v1-rc1 source.
+Only displayed version/test-status strings were changed for publication.
 
 Implementation and original prose: [MIT](LICENSE).
 Owner-supplied artwork has a separate status in [NOTICE](NOTICE.md).
