@@ -223,7 +223,7 @@ Slå av for ekte tester. Galleriets syntetiske historie er ikke flybevis.
 
 ## 10. Lagring og feilsøking
 
-Innstillinger: opptil to alternerende sjekksumbeskyttede gc*.cfg-spor per modell.
+Innstillinger: opptil to alternerende sjekksumbeskyttede gc1*.cfg-spor per modell.
 Teller: opptil to gd*.dat-spor. Spor opprettes ved skriving, ikke per flyging.
 ETHOS lagrer kilder. Detaljert logg/grafer tømmes ved radioomstart.
 
@@ -237,3 +237,20 @@ ETHOS lagrer kilder. Detaljert logg/grafer tømmes ved radioomstart.
 | Bilde mangler | Modellsti, RGB/RGBA 8-bit PNG og størrelse; Suite Image Manager. |
 
 [Tekniske notater](GasDeck.md) | [Startside](../README.md)
+
+
+## Sikkerhetsoppdatering, oktober 2026
+
+Eieren bekreftet bestått fysisk X20RS-radiotest av de siste RC1-pakkene den 2026-10-05. Sluttkontrollen passerte 252 automatiske kontrollpunkter for begge widgetene samlet; den native simulatorprøven passerte 84 funksjonstester og 120 skjermtegninger. Dette er ikke generell kompatibilitets- eller sikkerhetssertifisering.
+
+- Uventet nedgang i forbrukstelleren større enn 0,1 % av konfigurert kapasitet (minimum 1 mAh) gjør gjenværende kapasitet ukjent. Widgeten viser ikke automatisk fullt batteri ved en sensorreset.
+- En valgt batterispenningskilde må være borte like lenge som konfigurert avslutningsforsinkelse før tilbakekomst tillater en ny tellerbaseline. Korte telemetrigap, ARM-/tenningspauser og demo frigir ikke sperren. Langt RF-bortfall kan likevel ligne batteribytte; dette er ikke en fysisk batteridetektor.
+- Etter kontroll av faktisk lading og mAh-avlesning: meny **Accept battery counter...** i VoltDeck eller **Accept RX counters...** i GasDeck. Bekreftelse krever gyldig ARM AV eller tenning AV. Valget aksepterer avlesningen, men nullstiller ikke sensoren, endrer ikke faktisk lading og påvirker ikke flytellingen. Tankfylling i GasDeck er uavhengig.
+- Prosentkilden må ha prosentenhet, eventuelt eksplisitt råkilde uten enhet men med %-enhetstekst. Volt eller ampere kan ikke brukes som prosent.
+- Lydintervallet overlever korte tilbakekomster, manglende målinger og konfigurasjonsendringer. GasDeck gir RX første lydplass ved samtidige varsler, og veksler deretter mellom RX og drivstoff. Ingen WAV skal overlappe eller blokkere det andre varselet permanent.
+- Demo endrer ikke reelle maksimumsverdier, batterisperrer eller tankintegrasjon. Uobservert flow-gap gjør fremdeles estimatet ukjent og krever ny bekreftet tankfylling.
+- Lange tekster forkortes uten å kutte UTF-8-tegn. Tekstmåling har maksimalt 64 cacheoppføringer. Sensornavn oppdateres hvert femte sekund og ved kildebytte; sensorenheten følger kilden umiddelbart.
+
+### Kompatibilitet og sikkerhetskopi
+
+Denne hovedversjonen har bevisst ingen migrering av gamle innstillinger. Nye modellfiler bruker /scripts/vc3*.cfg i VoltDeck og /scripts/gc1*.cfg i GasDeck. Gamle vc*/gc*-filer blir verken lest, endret eller slettet; konfigurer de nye standardinnstillingene på nytt. Tellerfilene og det nåværende kildeformatet er uendret, slik at valgte kilder og flytellere kan beholdes uten import av gamle tallinnstillinger. Nye innstillingsfiler bruker VD5/GD2 og eksplisitt skjema 1; kildeheaderne forblir VD4/GD1. Ugyldige og ukjente fremtidige skjemaer overskrives ikke. Behold sikkerhetskopier og kontroller kapasitet, kjemi, skalaer, varsler og flylogggrenser på radioen. GasDeck flytter ikke reservert ARM til tenning. Private testhjelpere og modellspesifikke innstillinger følger ikke widgetpakken.

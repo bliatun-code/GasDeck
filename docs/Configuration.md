@@ -226,7 +226,7 @@ alerts. Turn it Off for live testing. Synthetic gallery history is not flight ev
 
 ## 10. Storage and troubleshooting
 
-Settings: up to two alternating checksum-protected gc*.cfg slots per model.
+Settings: up to two alternating checksum-protected gc1*.cfg slots per model.
 Counter: up to two gd*.dat slots. Slots are created on first write, not per flight.
 ETHOS stores source assignments. Detailed logs/graphs do not survive radio restart.
 
@@ -240,3 +240,20 @@ ETHOS stores source assignments. Detailed logs/graphs do not survive radio resta
 | No image | Correct model path, RGB/RGBA 8-bit PNG and suitable dimensions; Suite Image Manager. |
 
 [Technical notes](GasDeck.md) | [Home](../README.md)
+
+
+## Safety hardening (October 2026)
+
+The owner confirmed physical X20RS radio testing of the final RC1 builds on 2026-10-05. The shared final check passed 252 named automated checks; the preceding native ETHOS 26.1.2 simulator run passed 84 functional cases and 120 production-rendered frames. Counts cover both widgets, not 252 cases per widget. This is a project test report, not universal hardware compatibility or safety certification.
+
+- Remaining capacity from consumed mAh requires a monotonic counter. An unexpected decrease larger than 0.1% of configured capacity (minimum 1 mAh) makes remaining charge unknown; it never silently shows a full pack.
+- A configured battery-voltage source must be absent for the configured session-end delay before reconnection permits a new counter baseline. A brief RF gap, ARM/ignition pause, missing consumption sample, or entering preview does not clear the guard. A long RF outage can still resemble a battery change; this is not a physical battery detector.
+- After checking actual charge and the mAh reading, use the widget menu **Accept battery counter...** (VoltDeck) or **Accept RX counters...** (GasDeck). Confirmation requires a valid ARM OFF / ignition OFF indication, respectively. This only accepts the current reading; it does not reset any radio sensor, change charge, or affect flight counting. GasDeck fuel refuelling is independent.
+- Percent sources must use the percent unit. Explicit raw sources with UNIT_NONE and a percent unit label are also accepted. Voltage/current values are never interpreted as percentages.
+- Audio cooldown persists across short recovery, missing samples and configuration edits. WAV duration limits repetition to avoid overlap. GasDeck gives RX the first simultaneous alarm slot, then alternates due RX/fuel alarms so neither is starved.
+- Synthetic preview does not change live peaks, consumption guards or fuel integration. Actual flow integration becomes unknown after an unobserved gap; refuel confirmation is then required.
+- Long labels are UTF-8-safe shortened. Native-font text measurements use a 64-entry bounded cache; source names refresh every five seconds or on source/config changes, while canonical units stay live.
+
+### Settings compatibility
+
+This major version deliberately has no legacy settings migration. New per-model scalar files use /scripts/vc3*.cfg (VoltDeck) and /scripts/gc1*.cfg (GasDeck); old vc*/gc* files are not read, modified or deleted. Configure the new defaults explicitly. Counter files and the current ordered ETHOS source layout are unchanged, so current selected sources and flight counts can be retained without importing old scalar settings. New scalar envelopes are VD5 / GD2, explicit schema 1; native source headers remain VD4 / GD1. Invalid or future schemas are not overwritten. Keep backups before upgrading and verify all capacity, chemistry, scale, alarm and session settings on the radio. Reserved GasDeck ARM is not migrated to ignition. No test helpers or model-specific settings are included in the widget package.
