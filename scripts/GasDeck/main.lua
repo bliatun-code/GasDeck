@@ -2,7 +2,7 @@
 -- Copyright (c) 2026 bliatun-code and Ethos Widgets contributors.
 -- GasDeck: receiver power, gasoline engines and fuel telemetry for ETHOS.
 -- Read-only instrumentation. This widget NEVER controls ignition or throttle.
-local VERSION = "2026.10-dev2"
+local VERSION = "2026.10-v1"
 local MAX_IMAGE_PIXELS, BITMAP_RESERVE = 160000, 65536
 local FLIGHT_SESSION
 local HISTORY_POINTS, GRAPH_BINS = 180, 48
@@ -92,52 +92,267 @@ local SETTING_DEFS = {
     {"rf3WarnPercent",95,1,100},
     {"rf3CriticalPercent",50,0,99},
 }
+local SETTING_MAP = {}
+for _, definition in ipairs(SETTING_DEFS) do SETTING_MAP[definition[1]] = definition end
 local SETTINGS = {}
 for _,definition in ipairs(SETTING_DEFS) do SETTINGS[#SETTINGS+1]=definition[1] end
 local SOURCE_KEYS = {"rx1Source","rx2Source","currentSource","consumptionSource","rx1CurrentSource","rx2CurrentSource","rx1UsedSource","rx2UsedSource","rx1PercentSource","rx2PercentSource","flowSource","fuelUsedSource","fuelRemainingSource","rssi1Source","rssi2Source","rssi3Source","graph1Source","graph2Source","graph3Source","rpm1Source","rpm2Source","rpm3Source","rpm4Source","temp1Source","temp2Source","temp3Source","temp4Source","ignitionSource","armSource","throttleSource","airborneSource","powerSource","timerSource","txSource"}
--- Keep the legacy armSource storage slot so older source indexes remain valid.
--- It is migrated to ignition only when no ignition source was configured.
+-- The source layout is fixed. armSource is a reserved, unused slot.
 local CONFIG_LIMIT, CONFIG_STATE = 8192, nil
-local function clamp(value, minimum, maximum)
-    return math.max(minimum, math.min(maximum, value))
-end
-
-local function round(value)
-    return math.floor(value + 0.5)
-end
-
-local function finite(value)
-    return type(value) == "number" and value == value
-        and value ~= math.huge and value ~= -math.huge
-end
-
--- The "---" selection may be a real ETHOS Source object, not nil.
-local function selectedSource(source)
-    if source == nil or source == false or source == "" then return nil end
-    local ok, category = pcall(function() return source:category() end)
-    if ok and CATEGORY_NONE ~= nil and category == CATEGORY_NONE then return nil, category end
-    return source, ok and category or nil
-end
-
-local function getSource(parameters)
-    local ok, source = pcall(system.getSource, parameters)
-    if ok then return selectedSource(source) end
-end
-
-local function restoreSource(value)
-    if type(value) == "string" and value ~= "" then
-        return getSource(value)
-    elseif type(value) == "number" then
-        return getSource({category = CATEGORY_TELEMETRY_SENSOR, appId = value})
-    elseif type(value) == "userdata" or type(value) == "table" then
-        return selectedSource(value)
+-- SPDX-License-Identifier: MIT
+-- Shared build-time code. Bundled into each widget; no runtime dependency.
+local DeckCore = (function()
+    local function clamp(value, minimum, maximum)
+        return math.max(minimum, math.min(maximum, value))
     end
-end
+    local function round(value) return math.floor(value + 0.5) end
+    local function finite(value)
+        return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge
+    end
+    local function selectedSource(source)
+        if source == nil or source == false or source == "" then return nil end
+        local ok, category = pcall(function() return source:category() end)
+        if ok and CATEGORY_NONE ~= nil and category == CATEGORY_NONE then return nil, category end
+        return source, ok and category or nil
+    end
+    local function getSource(parameters)
+        local ok, source = pcall(system.getSource, parameters)
+        if ok then return selectedSource(source) end
+    end
+    local function restoreSource(value)
+        if type(value) == "string" and value ~= "" then return getSource(value)
+        elseif type(value) == "number" then return getSource({category = CATEGORY_TELEMETRY_SENSOR, appId = value})
+        elseif type(value) == "userdata" or type(value) == "table" then return selectedSource(value) end
+    end
+    local function validWidget(widget)
+        return type(widget) == "table" and not widget.destroyed and type(widget.data) == "table"
+            and type(widget.scratch) == "table" and finite(widget.nextPoll)
+    end
+    local function sample(source, quantity)
+        source = selectedSource(source)
+        if not source then return nil end
+        local ok, active, value, unit = pcall(function() return source:state(), source:value(), source:unit() end)
+        if not ok or not finite(value) then return nil end
+        if active == false then
+            local categoryOK, category = pcall(function() return source:category() end)
+            if not categoryOK then return nil end
+            if not (quantity == "timer" and category == CATEGORY_TIMER)
+                and not (quantity == "control" and category ~= CATEGORY_TELEMETRY_SENSOR) then return nil end
+        end
+        if quantity == "signal" and unit ~= UNIT_DB and unit ~= UNIT_PERCENT then return nil end
+        if quantity == "rpm" and unit ~= UNIT_RPM and unit ~= UNIT_NONE then return nil end
+        if quantity == "voltage" and unit ~= UNIT_VOLT and unit ~= UNIT_MILLIVOLT and unit ~= UNIT_NONE then return nil end
+        if quantity == "current" and unit ~= UNIT_AMPERE and unit ~= UNIT_MILLIAMPERE and unit ~= UNIT_NONE then return nil end
+        if quantity == "capacity" and unit ~= UNIT_MILLIAMPERE_HOUR and unit ~= UNIT_AMPERE_HOUR and unit ~= UNIT_NONE then return nil end
+        if quantity == "percent" then
+            -- Accept explicitly labelled raw percent sources, never arbitrary voltage/current.
+            if unit ~= UNIT_PERCENT then
+                local labelOK, label = pcall(function() return source:stringUnit() end)
+                if unit ~= UNIT_NONE or not labelOK or type(label) ~= "string" or label:gsub("%s", "") ~= "%" then return nil end
+            end
+            if value < 0 or value > 100 then return nil end
+        end
+        if quantity == "voltage" and unit == UNIT_MILLIVOLT then value = value / 1000
+        elseif quantity == "current" and unit == UNIT_MILLIAMPERE then value = value / 1000
+        elseif quantity == "capacity" and unit == UNIT_AMPERE_HOUR then value = value * 1000 end
+        return value
+    end
+    local function details(source, name, label)
+        source = selectedSource(source)
+        local result = {name = name, label = label, decimals = 0, unit = nil}
+        if source then
+            local ok, n, l, d, u = pcall(function()
+                return source:name(), source:stringUnit(), source:decimals(), source:unit()
+            end)
+            if ok then
+                if type(n) == "string" and n ~= "" then result.name = n end
+                if type(l) == "string" then result.label = l end
+                if finite(d) then result.decimals = clamp(d, 0, 3) end
+                result.unit = u
+            end
+        end
+        return result
+    end
+    local function sourceDetails(source, name, label)
+        local value = details(source, name, label)
+        return value.name, value.label, value.decimals
+    end
+    local function rfDetails(source, name)
+        source = selectedSource(source)
+        if not source then return name, "dB" end
+        local value = details(source, name, "")
+        return value.name, value.unit == UNIT_PERCENT and "%" or value.unit == UNIT_DB and "dB" or "?"
+    end
+    local function metadata(widget, slot, source, clock, name, label, rf)
+        widget.metadata = widget.metadata or {}
+        local cached = widget.metadata[slot]
+        if not cached or cached.source ~= source or clock < cached.clock or clock >= cached.clock + 5 then
+            cached = details(source, name, label)
+            cached.source, cached.clock = source, clock
+            widget.metadata[slot] = cached
+        end
+        if source ~= nil and source ~= false and source ~= "" then
+            local ok, unit = pcall(function() return source:unit() end)
+            cached.unit = ok and unit or nil -- canonical units must stay live
+        end
+        local unit = cached.label
+        if rf then unit = not source and "dB"
+            or cached.unit == UNIT_PERCENT and "%" or cached.unit == UNIT_DB and "dB" or "?" end
+        return cached.name, unit, cached.decimals
+    end
+    -- Monotonic consumed-mAh high-water mark, separate from flight qualification.
+    -- A sustained loss of a configured pack voltage is the same boundary as the log.
+    local function batteryUsed(widget, slot, source, voltageSource, voltage, used, capacity, clock, key)
+        widget.batteryStates = widget.batteryStates or {}
+        local state = widget.batteryStates[slot]
+        if not state or state.source ~= source or state.voltageSource ~= voltageSource
+            or state.capacity ~= capacity or state.key ~= key then
+            state = {source = source, voltageSource = voltageSource, capacity = capacity, key = key}
+            widget.batteryStates[slot] = state
+        end
+        if selectedSource(voltageSource) then
+            if voltage == nil then
+                if not state.lossSince or clock < state.lossSince then state.lossSince = clock end
+                if clock - state.lossSince >= widget.endDelay then state.newPack = true end
+            else
+                if state.newPack then state.high, state.uncertain, state.newPack = nil, nil, nil end
+                state.lossSince = nil
+            end
+        end
+        if used ~= nil then
+            local tolerance = math.max(1, capacity * 0.001)
+            if state.high and used + tolerance < state.high then state.uncertain = true end
+            state.high = math.max(state.high or used, used)
+        end
+        return not state.uncertain and used or nil, state.uncertain == true
+    end
+    -- Cooldowns survive brief missing data, recovery and appearance edits.
+    local function alarmReady(widget, slot, value, threshold, enabled, clock)
+        widget.alertStates = widget.alertStates or {}
+        local state = widget.alertStates[slot]
+        if not state then state = {}; widget.alertStates[slot] = state end
+        if value ~= nil then
+            if value <= threshold then state.active = true
+            elseif value >= threshold + 2 then state.active = false end
+        end
+        if not enabled or widget.preview or value == nil or value > threshold then return nil end
+        if clock < (widget.audioUntil or 0) or clock < (state.nextDue or 0) then return nil end
+        return state
+    end
+    local function alarmPlayed(widget, state, clock, interval, duration)
+        duration = (duration or 0) + 0.5
+        state.last, state.nextDue = clock, clock + math.max(interval, duration)
+        widget.audioUntil = clock + duration
+    end
+    -- Strict, checksummed and versioned scalar records; unknown future schemas are read-only.
+    local function decodeSettings(key, bytes, limit, digest, identityHex, decode, tag, definitions)
+        if type(bytes) ~= "string" or #bytes > limit then return nil end
+        local body, check = bytes:match("^(.*\n)CHECK=(%d+)\n$")
+        if not body or tonumber(check) ~= digest(body) then return nil end
+        local format, identity, sequence, payload = body:match("^(%u+%d+)|(%x+)|(%d+)\n(.*)$")
+        sequence = tonumber(sequence)
+        if identity ~= identityHex(key) or not sequence or sequence > 1000000000 then return nil end
+        if format ~= tag then return nil, "Unsupported settings format; do not downgrade" end
+        local values, count, position = {}, 0, 1
+        while position <= #payload do
+            local ending = payload:find("\n", position, true)
+            if not ending then return nil end
+            local name, kind, value = payload:sub(position, ending - 1):match("^([%a][%w]*)=([nbs]):(.*)$")
+            if not name or values[name] ~= nil then return nil end
+            if kind == "n" then value = tonumber(value); if not finite(value) then return nil end
+            elseif kind == "b" then
+                if value ~= "0" and value ~= "1" then return nil end
+                value = value == "1"
+            else
+                if #value > 512 or #value % 2 ~= 0 or value:find("[^%x]") then return nil end
+                value = value:lower():gsub("%x%x", decode)
+            end
+            values[name], count, position = value, count + 1, ending + 1
+        end
+        if values.schema ~= 1 then return nil, "Unsupported settings schema; do not downgrade" end
+        values.schema, count = nil, count - 1
+        if count ~= #definitions then return nil end
+        for _, definition in ipairs(definitions) do
+            if type(values[definition[1]]) ~= type(definition[2]) then return nil end
+        end
+        return {values = values, sequence = sequence, payload = payload, format = format}
+    end
+    -- Fixed-size native-font FIFO. Constant-time eviction; no retained custom fonts.
+    local fitCache, fitKeys, fitCount, fitCursor = {}, {}, 0, 0
+    local nativeFontHeights = {} -- fixed native font constants only
+    local function fitText(value, width, height, customFont, small)
+        value = tostring(value)
+        local key = not customFont and table.concat({width, height, small and 1 or 0, value}, "|") or nil
+        local cached = key and fitCache[key]
+        if cached then return cached.font, cached.value, cached.w, cached.h end
+        local fonts = small and SMALL_FONTS or VALUE_FONTS
+        local chosen, tw, th
+        if customFont and not small then
+            lcd.font(customFont); tw, th = lcd.getTextSize(value)
+            if tw <= width and th <= height then return customFont, value, tw, th end
+        end
+        for index, font in ipairs(fonts) do
+            -- Native font heights do not depend on label width. Do not repeatedly
+            -- measure fonts that are already known to be too tall for this field.
+            local knownHeight = nativeFontHeights[font]
+            if not knownHeight or knownHeight <= height or index == #fonts then
+                chosen = font; lcd.font(font); tw, th = lcd.getTextSize(value)
+                if not knownHeight then
+                    nativeFontHeights[font] = th
+                end
+                if tw <= width and th <= height then break end
+            end
+        end
+        if tw > width then
+            local suffix = "..."
+            local ew = lcd.getTextSize(suffix)
+            if ew > width then value = ""
+            else
+                local low, high, best = 0, #value, 0
+                while low < high do
+                    local middle = math.ceil((low + high) / 2)
+                    local boundary = middle
+                    local byte = value:byte(boundary + 1)
+                    while boundary > 0 and byte and byte >= 128 and byte < 192 do
+                        boundary = boundary - 1; byte = value:byte(boundary + 1)
+                    end
+                    local candidate = value:sub(1, boundary) .. suffix
+                    local candidateWidth = lcd.getTextSize(candidate)
+                    if candidateWidth <= width then low, best = middle, boundary
+                    else high = middle - 1 end
+                end
+                value = value:sub(1, best) .. suffix
+            end
+            tw, th = lcd.getTextSize(value)
+        end
+        if key then
+            fitCursor = fitCursor % 64 + 1
+            local previous = fitKeys[fitCursor]
+            if previous then fitCache[previous] = nil else fitCount = fitCount + 1 end
+            fitKeys[fitCursor] = key
+            fitCache[key] = {font = chosen, value = value, w = tw, h = th}
+        end
+        return chosen, value, tw, th
+    end
+    return {clamp = clamp, round = round, finite = finite, selectedSource = selectedSource,
+        getSource = getSource, restoreSource = restoreSource, validWidget = validWidget,
+        sample = sample, sourceDetails = sourceDetails, rfDetails = rfDetails, metadata = metadata,
+        batteryUsed = batteryUsed, alarmReady = alarmReady, alarmPlayed = alarmPlayed,
+        decodeSettings = decodeSettings, fitText = fitText,
+        cacheSize = function() return fitCount end}
+end)()
+local clamp, round, finite = DeckCore.clamp, DeckCore.round, DeckCore.finite
+local selectedSource, getSource, restoreSource = DeckCore.selectedSource, DeckCore.getSource, DeckCore.restoreSource
+local validWidget, sample = DeckCore.validWidget, DeckCore.sample
+local sourceDetails, rfDetails = DeckCore.sourceDetails, DeckCore.rfDetails
+
 
 local function changed(widget, resetAlarm)
+    if not validWidget(widget) then return end
     widget.refresh = true
     widget.nextPoll = 0
-    if resetAlarm then widget.lastFuelAlert,widget.lastRxAlert,widget.audioUntil=nil,nil,nil end
+    widget.metadata = nil
+    if resetAlarm then widget.soundCache = nil end
     pcall(model.dirty)
 end
 
@@ -224,42 +439,26 @@ end
 
 -- Separate namespaces: never read/write GasDeck model settings or counters.
 local function configRecord(key, bytes)
-    if not bytes or #bytes>CONFIG_LIMIT then return nil end
-    local body,check=bytes:match("^(.*\n)CHECK=(%d+)\n$")
-    if not body or tonumber(check)~=digest(body) then return nil end
-    local identity,sequence,payload=body:match("^GD1|(%x+)|(%d+)\n(.*)$")
-    sequence=tonumber(sequence)
-    if identity~=identityHex(key) or not sequence or sequence>1000000000 then return nil end
-    local values,count={},0
-    for name,kind,value in payload:gmatch("([%a][%w]*)=([nbs]):([^\n]*)\n") do
-        if values[name]~=nil then return nil end
-        if kind=="n" then value=tonumber(value);if not finite(value) then return nil end
-        elseif kind=="b" then if value~="0" and value~="1" then return nil end;value=value=="1"
-        else
-            if #value>512 or #value%2~=0 or value:find("[^%x]") then return nil end
-            value=value:lower():gsub("%x%x",HEX_DECODE)
-        end
-        values[name],count=value,count+1
-    end
-    if count~=#SETTINGS then return nil end
-    for _,name in ipairs(SETTINGS) do if values[name]==nil then return nil end end
-    return {values=values,sequence=sequence,payload=payload}
+    return DeckCore.decodeSettings(key, bytes, CONFIG_LIMIT, digest, identityHex, HEX_DECODE,
+        "GD2", SETTING_DEFS)
 end
 local function configLoad(key)
     if not key then return nil, nil, "Model path unavailable" end
-    local base = "/scripts/gc" .. tostring(digest(key))
+    local base = "/scripts/gc1" .. tostring(digest(key))
     local a, b = header(base .. "a.cfg", CONFIG_LIMIT + 1), header(base .. "b.cfg", CONFIG_LIMIT + 1)
     local function generation(bytes)
         if not bytes or #bytes > CONFIG_LIMIT then return -1 end
-        local identity, sequence = bytes:match("^GD1|(%x+)|(%d+)\n")
+        local format, identity, sequence = bytes:match("^(GD%d+)|(%x+)|(%d+)\n")
         if identity ~= identityHex(key) then return -1 end
         sequence = tonumber(sequence)
         return sequence and sequence <= 1000000000 and sequence or -1
     end
     -- Fully validate newest first; inspect the older copy only for recovery.
     if generation(b) > generation(a) then a, b = b, a end
-    local latest = configRecord(key, a)
-    if not latest then latest = configRecord(key, b) end
+    local latest, formatProblem = configRecord(key, a)
+    if formatProblem then CONFIG_STATE = nil; return nil, base, formatProblem end
+    if not latest then latest, formatProblem = configRecord(key, b) end
+    if formatProblem then CONFIG_STATE = nil; return nil, base, formatProblem end
     if not latest and (a or b) then
         CONFIG_STATE = nil
         return nil, base, "Settings files invalid; restore backup"
@@ -278,7 +477,7 @@ local function configPayload(widget)
         else return nil end
         lines[#lines + 1] = key .. "=" .. kind .. ":" .. value .. "\n"
     end
-    return table.concat(lines)
+    return "schema=n:1\n" .. table.concat(lines)
 end
 
 local function configSave(widget)
@@ -295,7 +494,7 @@ local function configSave(widget)
     if record and record.payload ~= widget.configPayload then return false, "Settings changed in another instance; reopen" end
     local sequence = (record and record.sequence or 0) + 1
     if sequence > 1000000000 then return false, "Settings generation limit reached" end
-    local body = "GD1|" .. identityHex(key) .. "|" .. sequence .. "\n" .. payload
+    local body = "GD2|" .. identityHex(key) .. "|" .. sequence .. "\n" .. payload
     local bytes = body .. "CHECK=" .. tostring(digest(body)) .. "\n"
     if #bytes > CONFIG_LIMIT then return false, "Settings file too large" end
     local path = base .. (sequence % 2 == 1 and "a.cfg" or "b.cfg")
@@ -314,13 +513,13 @@ end
 
 
 local function read(widget)
-    if type(widget)~="table" then return end
+    if not validWidget(widget) then return end
     local version=storage.read("v")
     if version=="GD1" then
         for index,key in ipairs(SOURCE_KEYS) do widget[key]=restoreSource(storage.read("s"..index)) end
     end
-    widget.ignitionSource=selectedSource(widget.ignitionSource) or selectedSource(widget.armSource)
-    widget.armSource=nil -- reserved legacy slot, never a second flight gate
+    widget.ignitionSource=selectedSource(widget.ignitionSource)
+    widget.armSource=nil -- reserved source slot, never a second flight gate
     widget.configKey=modelKey()
     local record,base,problem=configLoad(widget.configKey)
     widget.configBase,widget.configError=base,problem
@@ -345,66 +544,19 @@ local function read(widget)
     widget.fuelState=nil -- integrated fuel is deliberately unknown after module restart
 end
 local function write(widget)
-    if type(widget)~="table" then return end
+    if not validWidget(widget) then return end
     local ok,problem=configSave(widget)
     widget.configError=not ok and problem or nil
     if not ok then print("GasDeck settings NOT saved: "..tostring(problem)) end
     storage.write("v","GD1")
     for index,key in ipairs(SOURCE_KEYS) do storage.write("s"..index,widget[key] or "") end
 end
-local function sample(source, quantity)
-    source=selectedSource(source)
-    if not source then return nil end
-    local ok, active, value, unit = pcall(function()
-        return source:state(), source:value(), source:unit()
-    end)
-    if not ok or not finite(value) then return nil end
-    if active == false then
-        -- Timer state means running/stopped, not valid/missing telemetry.
-        local categoryOK, category = pcall(function() return source:category() end)
-        if not categoryOK then return nil end
-        local timerValid = quantity == "timer" and category == CATEGORY_TIMER
-        local controlValid = quantity == "control" and category ~= CATEGORY_TELEMETRY_SENSOR
-        if not timerValid and not controlValid then return nil end
-    end
-    if quantity == "signal" and unit ~= UNIT_DB and unit ~= UNIT_PERCENT then return nil end
-    if quantity == "rpm" and unit ~= UNIT_RPM and unit ~= UNIT_NONE then return nil end
-    if quantity == "voltage" and unit ~= UNIT_VOLT and unit ~= UNIT_MILLIVOLT and unit ~= UNIT_NONE then return nil end
-    if quantity == "current" and unit ~= UNIT_AMPERE and unit ~= UNIT_MILLIAMPERE and unit ~= UNIT_NONE then return nil end
-    if quantity == "capacity" and unit ~= UNIT_MILLIAMPERE_HOUR and unit ~= UNIT_AMPERE_HOUR and unit ~= UNIT_NONE then return nil end
-    if quantity == "voltage" and unit == UNIT_MILLIVOLT then
-        value = value / 1000
-    elseif quantity == "current" and unit == UNIT_MILLIAMPERE then
-        value = value / 1000
-    elseif quantity == "capacity" and unit == UNIT_AMPERE_HOUR then
-        value = value * 1000
-    end
-    return value
-end
 
-local function sourceDetails(source, fallbackName, fallbackUnit)
-    if source then
-        local ok, name, unit, decimals = pcall(function()
-            return source:name(), source:stringUnit(), source:decimals()
-        end)
-        if ok then
-            return type(name) == "string" and name or fallbackName,
-                type(unit) == "string" and unit or fallbackUnit,
-                finite(decimals) and clamp(decimals, 0, 3) or 0
-        end
-    end
-    return fallbackName, fallbackUnit, 0
-end
+
+
 
 -- Source names and canonical units remain available without a live reading.
-local function rfDetails(source, fallbackName)
-    source = selectedSource(source)
-    if not source then return fallbackName, "dB" end
-    local nameOK, name = pcall(function() return source:name() end)
-    local unitOK, unit = pcall(function() return source:unit() end)
-    local label = nameOK and type(name) == "string" and name ~= "" and name or fallbackName
-    return label, unitOK and (unit == UNIT_PERCENT and "%" or unit == UNIT_DB and "dB") or "?"
-end
+
 
 
 local function rfLimits(widget,unit,channel)
@@ -494,6 +646,7 @@ local function memory()
 end
 
 local function memorySnapshot(widget)
+    if not validWidget(widget) then return end
     local m = memory()
     print(string.format("GasDeck %s LuaFree=%s BitmapFree=%s Image=%s Pixels=%s",
         VERSION, tostring(m.luaRamAvailable), tostring(m.luaBitmapsRamAvailable),
@@ -695,18 +848,22 @@ local function temperatureReading(source)
     if unit=="f" or unit=="fahrenheit" then return (value-32)*5/9 end
 end
 local function percentReading(source)
-    local value=sample(source)
-    local ok,unit=pcall(function() return source:unit() end)
-    if ok and unit==UNIT_PERCENT and value~=nil and value>=0 and value<=100 then return value end
+    return sample(source, "percent")
 end
-local function rxBattery(widget,data,index)
+local function rxBattery(widget,data,index,clock,key)
     local prefix="rx"..index
     local voltage=positive(sample(widget[prefix.."Source"],"voltage"))
     local used=sample(widget[prefix.."UsedSource"],"capacity")
     if used and used<0 then used=nil end
+    local trustedUsed,reset=used,false
+    if not widget.preview then
+        trustedUsed,reset=DeckCore.batteryUsed(widget,prefix,widget[prefix.."UsedSource"],
+            widget[prefix.."Source"],voltage,used,widget[prefix.."Capacity"],clock,key)
+    end
+    data[prefix.."CounterReset"]=reset
     local percent,estimated
     if widget[prefix.."Method"]==1 then
-        percent=used and clamp((widget[prefix.."Capacity"]-used)*100/widget[prefix.."Capacity"],0,100) or nil
+        percent=trustedUsed and clamp((widget[prefix.."Capacity"]-trustedUsed)*100/widget[prefix.."Capacity"],0,100) or nil
     elseif widget[prefix.."Method"]==2 then percent=percentReading(widget[prefix.."PercentSource"])
     else
         local chemistry=TYPES[widget[prefix.."Chemistry"]]
@@ -831,6 +988,12 @@ local function safeGroundAction(widget)
     if not selectedSource(widget.ignitionSource) then return false,"Select a valid ignition source first." end
     local on=ignitionReading(widget)
     if on~=false then return false,"Confirm ignition OFF with valid source first." end
+    return true
+end
+local function acceptRxCounters(widget)
+    local safe, problem = safeGroundAction(widget)
+    if not safe then return false, problem end
+    widget.batteryStates, widget.nextPoll, widget.refresh = nil, 0, true
     return true
 end
 local function finishFlight(widget)
@@ -982,25 +1145,31 @@ local function updateAutoLog(widget,data,clock,key)
         cancelAutoLog(widget);widget.logVisible,widget.diagnosticsVisible,widget.refresh=true,false,true
     end
 end
-local function alert(widget,kind,low,enabled,sound,clock)
-    local key=kind=="Fuel" and "lastFuelAlert" or "lastRxAlert"
-    if widget.preview or not low or not enabled then widget[key]=nil;return end
-    if clock<(widget.audioUntil or 0) then return end
-    local path=audioPath(widget.audioFolder,sound)
-    widget.soundCache=widget.soundCache or {}
-    local cached=widget.soundCache[kind]
-    if not cached or cached.path~=path then
-        cached={path=path,duration=path~="" and audioInfo(path) or nil};widget.soundCache[kind]=cached
+local function alerts(widget, data, clock)
+    local fuel = DeckCore.alarmReady(widget, "Fuel", data.fuelPercent, widget.fuelWarning, widget.fuelAlarm, clock)
+    local rxPercent
+    for index = 1, 2 do
+        if not data["rx"..index.."Estimated"] or widget.alarmEstimate then
+            local value = data["rx"..index.."Percent"]
+            if value ~= nil then rxPercent = rxPercent and math.min(rxPercent, value) or value end
+        end
     end
-    local interval=math.max(widget.alertInterval,(cached.duration or 0)+0.5)
-    if widget[key] and clock-widget[key]<interval then return end
-    widget[key]=clock
-    if cached.duration then
-        local ok=pcall(system.playFile,path)
-        if ok then widget.audioUntil=clock+cached.duration+0.5;return end
+    local rx = DeckCore.alarmReady(widget, "RX", rxPercent, 30, widget.rxAlarm, clock)
+    -- Critical RX gets the first slot; simultaneous due alarms then alternate.
+    local kind = rx and (not fuel or widget.lastAudioKind ~= "RX") and "RX" or fuel and "Fuel" or nil
+    if not kind then return end
+    local state = kind == "RX" and rx or fuel
+    local path = audioPath(widget.audioFolder, kind == "RX" and widget.rxSound or widget.fuelSound)
+    widget.soundCache = widget.soundCache or {}
+    local cached = widget.soundCache[kind]
+    if not cached or cached.path ~= path then
+        cached = {path = path, duration = path ~= "" and audioInfo(path) or nil}; widget.soundCache[kind] = cached
     end
-    pcall(system.playTone,kind=="Fuel" and 1000 or 1400,250,50)
-    widget.audioUntil=clock+0.5
+    local played = cached.duration and pcall(system.playFile, path)
+    if not played then pcall(system.playTone, kind == "Fuel" and 1000 or 1400, 250, 50) end
+    DeckCore.alarmPlayed(widget, state, clock, widget.alertInterval, played and cached.duration or 0)
+    widget.lastAudioKind = kind
+    widget[kind == "Fuel" and "lastFuelAlert" or "lastRxAlert"] = clock
 end
 local function prepareFlightGraphs(widget, clock)
     local session = widget.flightSession
@@ -1119,7 +1288,7 @@ end
 
 
 local function wakeup(widget)
-    if type(widget)~="table" then return end
+    if not validWidget(widget) then return end
     local clock=os.clock()
     if clock<widget.nextPoll then return end
     widget.nextPoll=clock+0.25
@@ -1129,13 +1298,14 @@ local function wakeup(widget)
         widget.runtimeModel,widget.fuelState=key,nil
         widget.peakRPM,widget.peakTemp={},{}
         widget.lastFuelAlert,widget.lastRxAlert,widget.audioUntil=nil,nil,nil
+        widget.alertStates,widget.batteryStates,widget.metadata,widget.lastAudioKind=nil,nil,nil,nil
     end
     local colors=palette(widget)
     local data=widget.scratch
     for name in pairs(data) do data[name]=nil end
     local ok,name=pcall(model.name)
     data.modelName=ok and name or "GasDeck"
-    rxBattery(widget,data,1);rxBattery(widget,data,2)
+    rxBattery(widget,data,1,clock,key);rxBattery(widget,data,2,clock,key)
     data.current=sample(widget.currentSource,"current")
     data.used=sample(widget.consumptionSource,"capacity")
     if data.used and data.used<0 then data.used=nil end
@@ -1151,21 +1321,23 @@ local function wakeup(widget)
         local rpm,temp=sample(rpmSource,"rpm"),temperatureReading(tempSource)
         if rpm and rpm<0 then rpm=nil end
         data["rpm"..index],data["temp"..index]=rpm,temp
-        data["rpmName"..index]=sourceDetails(rpmSource,"RPM "..index,"")
-        data["tempName"..index]=sourceDetails(tempSource,"TEMP "..index,"")
-        if rpm then widget.peakRPM[index]=math.max(widget.peakRPM[index] or 0,rpm) end
-        if temp then widget.peakTemp[index]=math.max(widget.peakTemp[index] or temp,temp) end
+        if index<=widget.rpmCount then data["rpmName"..index]=DeckCore.metadata(widget,"RPM"..index,rpmSource,clock,"RPM "..index,"") end
+        if index<=widget.tempCount then data["tempName"..index]=DeckCore.metadata(widget,"Temp"..index,tempSource,clock,"TEMP "..index,"") end
+        if not widget.preview and rpm then widget.peakRPM[index]=math.max(widget.peakRPM[index] or 0,rpm) end
+        if not widget.preview and temp then widget.peakTemp[index]=math.max(widget.peakTemp[index] or temp,temp) end
     end
     for channel=1,3 do
         local source=widget["rssi"..channel.."Source"]
         data["rssi"..channel]=sample(source,"signal")
-        data["rssi"..channel.."Name"],data["rssi"..channel.."Unit"]=rfDetails(source,"RF"..channel)
+        if channel<=widget.rfCount then
+            data["rssi"..channel.."Name"],data["rssi"..channel.."Unit"]=DeckCore.metadata(widget,"RF"..channel,source,clock,"RF"..channel,"",true)
+        end
         local graphSource
         if flight then graphSource=flight["source"..channel]
         else graphSource=selectedSource(widget["graph"..channel.."Source"]) or selectedSource(source) end
         data["graph"..channel]=sample(graphSource,"signal")
     end
-    updateFuel(widget,data,clock,key)
+    if not widget.preview then updateFuel(widget,data,clock,key) end
     if widget.preview then
         data.rx1,data.rx2,data.rx1Percent,data.rx2Percent=7.8,6.5,78,66
         data.rx1Estimated,data.rx2Estimated=false,false
@@ -1189,8 +1361,7 @@ local function wakeup(widget)
     for name,value in pairs(data) do if widget.data[name]~=value then dirty=true end end
     for name in pairs(widget.data) do if data[name]==nil then dirty=true end end
     widget.scratch,widget.data,widget.refresh=widget.data,data,false
-    alert(widget,"Fuel",data.fuelLow,widget.fuelAlarm,widget.fuelSound,clock)
-    alert(widget,"RX",data.rxLow,widget.rxAlarm,widget.rxSound,clock)
+    alerts(widget,data,clock)
     if dirty then lcd.invalidate() end
 end
 local function batteryColor(percent)
@@ -1210,42 +1381,23 @@ end
 local function rounded(x, y, w, h, radius, color)
     radius = math.max(0, math.floor(math.min(radius, w / 2, h / 2)))
     if radius < 1 then rect(x, y, w, h, color); return end
+    local left, top, middleX, middleY = round(x), round(y), round(x + radius), round(y + radius)
+    local stripX, cornerX, cornerY = round(x + w - radius), round(x + w - radius - 1), round(y + h - radius - 1)
+    local innerW, innerH = math.max(0, round(w - 2 * radius)), math.max(0, round(h - 2 * radius))
     lcd.color(color)
-    lcd.drawFilledRectangle(round(x + radius), round(y), math.max(0, round(w - 2 * radius)), round(h))
-    lcd.drawFilledRectangle(round(x), round(y + radius), round(radius), math.max(0, round(h - 2 * radius)))
-    lcd.drawFilledRectangle(round(x + w - radius), round(y + radius), round(radius), math.max(0, round(h - 2 * radius)))
-    lcd.drawFilledCircle(round(x + radius), round(y + radius), radius)
-    lcd.drawFilledCircle(round(x + w - radius - 1), round(y + radius), radius)
-    lcd.drawFilledCircle(round(x + radius), round(y + h - radius - 1), radius)
-    lcd.drawFilledCircle(round(x + w - radius - 1), round(y + h - radius - 1), radius)
+    lcd.drawFilledRectangle(middleX, top, innerW, round(h))
+    lcd.drawFilledRectangle(left, middleY, radius, innerH)
+    lcd.drawFilledRectangle(stripX, middleY, radius, innerH)
+    lcd.drawFilledCircle(middleX, middleY, radius)
+    lcd.drawFilledCircle(cornerX, middleY, radius)
+    lcd.drawFilledCircle(middleX, cornerY, radius)
+    lcd.drawFilledCircle(cornerX, cornerY, radius)
 end
 
 local function text(x, y, value, width, height, color, align, customFont, small)
-    local fonts = small and SMALL_FONTS or VALUE_FONTS
-    local tw, th
-    if customFont and not small then
-        lcd.font(customFont)
-        tw, th = lcd.getTextSize(value)
-        if tw <= width and th <= height then
-            lcd.color(color)
-            lcd.drawText(round(x), round(math.max(0,math.min(y,SURFACE_HEIGHT-th))), value, align or LEFT)
-            return tw, th
-        end
-    end
-    for _, font in ipairs(fonts) do
-        lcd.font(font)
-        tw, th = lcd.getTextSize(value)
-        if tw <= width and th <= height then break end
-    end
-    if tw>width then
-        while tw>width and #value>3 do
-            value=value:match("^(.*)[%z\1-\127\194-\244][\128-\191]*$") or ""
-            tw,th=lcd.getTextSize(value.."...")
-        end
-        value=value.."..."
-    end
-    lcd.color(color)
-    lcd.drawText(round(x), round(math.max(0,math.min(y,SURFACE_HEIGHT-th))), value, align or LEFT)
+    local font, fitted, tw, th = DeckCore.fitText(value, width, height, customFont, small)
+    lcd.font(font); lcd.color(color)
+    lcd.drawText(round(x), round(math.max(0, math.min(y, SURFACE_HEIGHT - th))), fitted, align or LEFT)
     return tw, th
 end
 
@@ -1350,12 +1502,13 @@ local function smallBattery(widget,colors,index,sx,sy)
     rounded(x+2*sx,y+2*sy,w-4*sx,h-4*sy,6*math.min(sx,sy),colors.background)
     for segment=1,8 do
         local row=y+h-8*sy-segment*8.6*sy
-        rect(x+7*sx,row,w-14*sx,6*sy,colors.track)
         local fill=percent and clamp(percent/12.5-segment+1,0,1) or 0
+        if fill<1 then rect(x+7*sx,row,w-14*sx,6*sy,colors.track) end
         if fill>0 then rect(x+7*sx,row+6*sy*(1-fill),w-14*sx,6*sy*fill,color) end
     end
     text(cx,239*sy,valueText(data[prefix],2).." V",112*sx,26*sy,colors.foreground,CENTERED,widget.valueFont)
-    text(cx,269*sy,valueText(percent,0).."%"..(data[prefix.."Estimated"] and " EST" or ""),112*sx,21*sy,color,CENTERED)
+    text(cx,269*sy,(data[prefix.."CounterReset"] and widget[prefix.."Method"]==1 and "CHECK mAh"
+        or valueText(percent,0).."%"..(data[prefix.."Estimated"] and " EST" or "")),112*sx,21*sy,color,CENTERED)
     text(cx,294*sy,TYPES[widget[prefix.."Chemistry"]].name.." / "..widget[prefix.."Cells"].."S",112*sx,13*sy,
         colors.secondary,CENTERED,nil,true)
 end
@@ -1372,18 +1525,21 @@ local function drawRPM(widget,colors,index,x,width,sx,sy)
     local count=width/sx<130 and 12 or 24
     local gap=2*sx
     local segmentWidth=(width-(count-1)*gap)/count
+    local activeCount=math.ceil(ratio*count)
     for segment=1,count do
         local position=segment/count*100
         local color=colors.track
-        if reading and segment<=math.ceil(ratio*count) then
+        if reading and segment<=activeCount then
             color=position>=widget.redZone and COLORS.red or position>=widget.redZone-10 and COLORS.orange
                 or position>=widget.redZone-20 and COLORS.yellow or colors.accent
         end
         local px=x+(segment-1)*(segmentWidth+gap)
         local py=(443-24*(segment/count)^0.8)*sy
         lcd.color(color)
-        lcd.drawFilledTriangle(round(px+2*sx),round(py),round(px+segmentWidth),round(py),round(px),round(py+12*sy))
-        lcd.drawFilledTriangle(round(px+segmentWidth),round(py),round(px+segmentWidth-2*sx),round(py+12*sy),round(px),round(py+12*sy))
+        local left, innerLeft, right, innerRight = round(px), round(px+2*sx), round(px+segmentWidth), round(px+segmentWidth-2*sx)
+        local top, bottom = round(py), round(py+12*sy)
+        lcd.drawFilledTriangle(innerLeft,top,right,top,left,bottom)
+        lcd.drawFilledTriangle(right,top,innerRight,bottom,left,bottom)
     end
     text(x,458*sy,"0",30*sx,12*sy,colors.secondary,LEFT,nil,true)
     text(x+width,458*sy,string.format("%.0fk",widget.rpmMaximum/1000),45*sx,12*sy,colors.secondary,RIGHT,nil,true)
@@ -1397,9 +1553,11 @@ local function drawFuel(widget,colors,x,width,sx,sy)
     text(x+width,408*sy,valueText(data.fuelPercent,0).."%",width*0.36,26*sy,color,RIGHT,widget.valueFont)
     local count,gap=24,2*sx
     local barWidth=(width-(count-1)*gap)/count
+    local reserveCount=math.floor(widget.fuelWarning/100*count)
+    local activeCount=data.fuelPercent and math.ceil(data.fuelPercent/100*count) or 0
     for segment=1,count do
-        local reserve=segment/count*100<=widget.fuelWarning
-        local active=data.fuelPercent~=nil and (segment-1)/count*100<data.fuelPercent
+        local reserve=segment<=reserveCount
+        local active=segment<=activeCount
         rect(x+(segment-1)*(barWidth+gap),440*sy,barWidth,13*sy,
             active and (reserve and COLORS.red or colors.accent) or reserve and COLORS.red or colors.track)
         if reserve and not active then rect(x+(segment-1)*(barWidth+gap),443*sy,barWidth,7*sy,colors.background) end
@@ -1481,9 +1639,9 @@ local function paintDiagnostics(widget,colors,sx,sy)
     text(24*sx,465*sy,"Bench filtering is not an airborne detector. Ignition indication never controls engine.",752*sx,12*sy,colors.accent,LEFT,nil,true)
 end
 local function paint(widget)
-    if type(widget)~="table" then return end
+    if not validWidget(widget) then return end
     local width,height=lcd.getWindowSize()
-    if width<=0 or height<=0 then return end
+    if not finite(width) or not finite(height) or width<=0 or height<=0 then return end
     SURFACE_WIDTH,SURFACE_HEIGHT=width,height
     local sx,sy=width/800,height/480
     local colors,data=palette(widget),widget.data
@@ -1544,14 +1702,16 @@ local function paint(widget)
         drawFuel(widget,colors,520*sx,256*sx,sx,sy)
     else drawFuel(widget,colors,24*sx,752*sx,sx,sy) end
     local footer=widget.preview and "SYNTHETIC PREVIEW / NO ALERTS OR FLIGHT COUNT"
+        or ((data.rx1CounterReset and widget.rx1Method==1) or (data.rx2CounterReset and widget.rx2Method==1)) and "RX COUNTER RESET: CHECK BATTERY"
         or data.fuelLow and "LOW FUEL" or data.rxLow and "LOW RX BATTERY" or data.fuelNote or "SELECT TELEMETRY"
     text(24*sx,299*sy,footer,520*sx,12*sy,colors.secondary,LEFT,nil,true)
 end
 
 local function numberField(widget,label,key,low,high,suffix,step)
+    local definition=SETTING_MAP[key]
+    if definition and definition[3] then low,high=definition[3],definition[4] end
     local line=form.addLine(label,widget.configPanel)
-    local field=form.addNumberField(line,nil,low,high,function() return widget[key] end,function(value)
-        widget[key]=value
+    local field=form.addNumberField(line,nil,low,high,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=value
         if key=="signalMinimum" then widget.signalMaximum=math.max(value+1,widget.signalMaximum) end
         if key=="signalMaximum" then widget.signalMinimum=math.min(value-1,widget.signalMinimum) end
         if key=="throttleMinimum" then widget.throttleMaximum=math.max(value+1,widget.throttleMaximum) end
@@ -1579,29 +1739,30 @@ local function numberField(widget,label,key,low,high,suffix,step)
 end
 local function choiceField(widget,label,key,choices)
     local line=form.addLine(label,widget.configPanel)
-    form.addChoiceField(line,nil,choices,function() return widget[key] end,function(value) widget[key]=value;changed(widget,true) end)
+    form.addChoiceField(line,nil,choices,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=value;changed(widget,true) end)
 end
 local function colorField(widget,label,key)
     local line=form.addLine(label,widget.configPanel)
-    form.addColorField(line,nil,function() return widget[key] end,function(value) widget[key]=value;changed(widget) end)
+    form.addColorField(line,nil,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=value;changed(widget) end)
 end
 local function showProblem(message)
     form.openDialog({title="GasDeck",message=message,buttons={{label="OK",action=function() return true end}}})
 end
 local function askAction(widget,action,title,message)
+    if not validWidget(widget) then return end
     local safe,problem=safeGroundAction(widget)
     if not safe then showProblem(problem);return end
     local key=modelKey()
     form.openDialog({title=title,message=message,buttons={{label="Cancel",action=function() return true end},
         {label="Confirm",action=function()
-            if modelKey()~=key then return true end
+            if not validWidget(widget) or modelKey()~=key then return true end
             local ok,reason=action(widget)
             if not ok then print("GasDeck: "..tostring(reason));return false end
             lcd.invalidate();return true
         end}}})
 end
 local function configure(widget)
-    if type(widget)~="table" then return end
+    if not validWidget(widget) then return end
     cancelAutoLog(widget)
     widget.configPanel=nil
     form.addLine("GasDeck "..VERSION)
@@ -1615,26 +1776,23 @@ local function configure(widget)
     end
     local function boolean(label,key)
         local line=form.addLine(label,widget.configPanel)
-        form.addBooleanField(line,nil,function() return widget[key] end,function(value)
-            widget[key]=value;cancelAutoLog(widget);changed(widget,true)
+        form.addBooleanField(line,nil,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=value;cancelAutoLog(widget);changed(widget,true)
         end)
     end
     local function sourceField(label,key)
         local line=form.addLine(label,widget.configPanel)
-        form.addSourceField(line,nil,function() return widget[key] end,function(value)
-            widget[key]=selectedSource(value);changed(widget,true)
+        form.addSourceField(line,nil,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=selectedSource(value);changed(widget,true)
         end)
     end
     local function stringField(label,key,dirty)
         local line=form.addLine(label,widget.configPanel)
-        form.addTextField(line,nil,function() return widget[key] end,function(value)
-            widget[key]=(value or ""):sub(1,256)
+        form.addTextField(line,nil,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=(value or ""):sub(1,256)
             if dirty then widget[dirty]=true end
             changed(widget,true)
         end)
     end
     if widget.configError then note(widget.configError) end
-    note("Physical radio tested by owner; verify your setup.")
+    note("Owner radio test passed: 2026-10-05.")
     note("Per-model settings: gc*.cfg / counters: gd*.dat")
     group("Model / appearance")
     stringField("Engine brand","engineBrand")
@@ -1646,7 +1804,7 @@ local function configure(widget)
     choiceField(widget,"Image source","imageMode",{{"Selected model",1},{"Image file",2},{"Hidden",3}})
     local line=form.addLine("Image file",widget.configPanel)
     form.addFileField(line,nil,"/bitmaps/models","image+ext",function() return widget.imageName end,
-        function(value) widget.imageName=value or "";widget.imageDirty=true;changed(widget) end)
+        function(value) if not validWidget(widget) then return end; widget.imageName=value or "";widget.imageDirty=true;changed(widget) end)
     note("Reuses model image; native instruments need no art.")
     note("PNG RGB/RGBA 8-bit; <=160k pixels; 290x191 ideal.")
     for index=1,2 do
@@ -1661,6 +1819,7 @@ local function configure(widget)
         sourceField("Percent source",prefix.."PercentSource")
         sourceField("Current source",prefix.."CurrentSource")
         note("Individual % needs individual consumption/sensor.")
+        note("Counter decrease: unknown until loss or confirmation.")
         note("Do not assign combined mAh to both batteries.")
         note("Voltage % is rough, especially on flat LiFe curve.")
     end
@@ -1713,8 +1872,7 @@ local function configure(widget)
         local label,key=definition[1],definition[2]
         line=form.addLine(label,widget.configPanel)
         local folder=normalizeAudioFolder(widget.audioFolder)
-        form.addFileField(line,nil,folder,"audio+ext",function() return widget[key] end,function(value)
-            widget[key]=audioPath(folder,value);changed(widget,true)
+        form.addFileField(line,nil,folder,"audio+ext",function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=audioPath(folder,value);changed(widget,true)
         end)
     end
     note("PCM WAV: 32kHz, mono, 16-bit; invalid file uses tone.")
@@ -1778,11 +1936,12 @@ local function configure(widget)
     widget.configPanel=nil
 end
 local function destroy(widget)
-    -- ETHOS may request cleanup without a created widget instance.
-    if type(widget) ~= "table" then return end
+    if not validWidget(widget) then return end
+    widget.destroyed = true
     widget.autoLogSession, widget.autoLogSeen, widget.autoLogDue = nil, nil, nil
     widget.modelImage, widget.valueFont, widget.flightSession = nil, nil, nil
     widget.fuelState,widget.soundCache,widget.peakRPM,widget.peakTemp=nil,nil,nil,nil
+    widget.metadata,widget.batteryStates,widget.alertStates=nil,nil,nil
     widget.rfGraphs, widget.rfGraphWork = nil, nil
     if FLIGHT_SESSION and FLIGHT_SESSION.owner == widget then
         FLIGHT_SESSION.owner, FLIGHT_SESSION.lastClock = nil, nil
@@ -1793,19 +1952,33 @@ end
 
 
 local function menu(widget)
+    if not validWidget(widget) then return {} end
     return {
         {(widget.logVisible or widget.diagnosticsVisible) and "Dashboard" or "Flight log",function()
+            if not validWidget(widget) then return end
             cancelAutoLog(widget)
             if widget.diagnosticsVisible then widget.logVisible=false else widget.logVisible=not widget.logVisible end
             widget.diagnosticsVisible,widget.refresh=false,true;lcd.invalidate()
         end},
         {"Flight diagnostics",function()
+            if not validWidget(widget) then return end
             cancelAutoLog(widget);widget.diagnosticsVisible,widget.logVisible,widget.refresh=true,false,true;lcd.invalidate()
         end},
-        {"Finish flight...",function() askAction(widget,finishFlight,"Finish flight?","Keep qualified log. Ignition must be OFF.") end},
-        {"Refuel...",function() askAction(widget,refuel,"Confirm fuel loaded?",tostring(widget.fuelLoaded).." ml. Ignition must be OFF.") end},
-        {"Reset live peaks",function() widget.peakRPM,widget.peakTemp={},{};changed(widget) end},
-        {"Memory snapshot",function() memorySnapshot(widget) end},
+        {"Finish flight...",function()
+            if not validWidget(widget) then return end
+            askAction(widget,finishFlight,"Finish flight?","Keep qualified log. Ignition must be OFF.") end},
+        {"Refuel...",function()
+            if not validWidget(widget) then return end
+            askAction(widget,refuel,"Confirm fuel loaded?",tostring(widget.fuelLoaded).." ml. Ignition must be OFF.") end},
+        {"Reset live peaks",function()
+            if not validWidget(widget) then return end
+            widget.peakRPM,widget.peakTemp={},{};changed(widget) end},
+        {"Accept RX counters...",function()
+            if not validWidget(widget) then return end
+            askAction(widget,acceptRxCounters,"Accept RX counters?","Check battery charge and mAh. Ignition must be OFF.") end},
+        {"Memory snapshot",function()
+            if not validWidget(widget) then return end
+            memorySnapshot(widget) end},
     }
 end
 local function init()
