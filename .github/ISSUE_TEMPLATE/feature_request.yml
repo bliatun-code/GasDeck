@@ -1,0 +1,15 @@
+name: Feature request
+description: Suggest a GasDeck improvement
+title: "[Feature]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested behavior and affected sensors
+      description: Include units. Do not share private files or personal details.
