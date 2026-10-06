@@ -1,8 +1,16 @@
 # GasDeck change log
 
+## 2026.10-v2 - release, 2026-10-06
+
+- Add ETHOS 1.6.6 compatibility.
+- Remove historical radio-test information and internal settings/counter-file details from the radio configuration menu.
+- Remove the Memory snapshot menu action.
+- Simplify installation and configuration documentation.
+- Regression and render checks passed; physical-radio testing passed on ETHOS 26.1.2.
+
 ## 2026.10-v1 - release, 2026-10-05
 
-- Owner confirmed physical X20RS testing of the final RC1 build on 2026-10-05.
+- Physical X20RS testing of the final RC1 build passed on 2026-10-05.
 - First named GasDeck ZIP release; dual RX power, fuel, ignition, up to four RPM/four temperatures and three RF slots.
 - Unexpected consumed-mAh decreases become unknown instead of showing a falsely full battery; safe manual acknowledgement and sustained-power-loss boundaries.
 - Persistent alarm cooldowns, non-overlapping WAV playback and fair GasDeck RX/fuel scheduling.
@@ -16,7 +24,7 @@
 ## 2026.10-dev2 (development snapshot; no release)
 
 - Independent repository, English/Norwegian illustrated guides and technical notes.
-- Owner reported physical-radio testing passed on 2026-10-05.
+- Physical-radio testing passed on 2026-10-05.
 - VoltDeck-aligned header; smaller ignition plaque; larger TX below; source-kind line hidden.
 - Ignition is also the flight gate; OFF pauses the same session instead of recounting.
 - Independent LiPo/LiFe RX capacity; up to four measured RPM and four temperatures.

@@ -2,13 +2,14 @@
 -- Copyright (c) 2026 bliatun-code and Ethos Widgets contributors.
 -- GasDeck: receiver power, gasoline engines and fuel telemetry for ETHOS.
 -- Read-only instrumentation. This widget NEVER controls ignition or throttle.
-local VERSION = "2026.10-v1"
+local VERSION = "2026.10-v2"
 local MAX_IMAGE_PIXELS, BITMAP_RESERVE = 160000, 65536
 local FLIGHT_SESSION
 local HISTORY_POINTS, GRAPH_BINS = 180, 48
 local GRAPH_SOURCE_STEPS, GRAPH_BIN_STEPS = 24, 16
 local BITMAP_CACHE = setmetatable({}, {__mode = "v"})
-local VALUE_FONTS = {FONT_XXL, FONT_XL, FONT_L_BOLD, FONT_L, FONT_M_BOLD, FONT_M, FONT_S, FONT_XS}
+-- Ethos 1.6 uses STD names for the medium fonts.
+local VALUE_FONTS = {FONT_XXL, FONT_XL, FONT_L_BOLD, FONT_L, FONT_M_BOLD or FONT_STD_BOLD, FONT_M or FONT_STD, FONT_S, FONT_XS}
 local SMALL_FONTS = {FONT_S, FONT_XS}
 local SURFACE_WIDTH,SURFACE_HEIGHT=800,480
 local COLORS = {
@@ -643,14 +644,6 @@ local function memory()
     local ok, result = pcall(system.getMemoryUsage)
     if ok and type(result) == "table" then return result end
     return {}
-end
-
-local function memorySnapshot(widget)
-    if not validWidget(widget) then return end
-    local m = memory()
-    print(string.format("GasDeck %s LuaFree=%s BitmapFree=%s Image=%s Pixels=%s",
-        VERSION, tostring(m.luaRamAvailable), tostring(m.luaBitmapsRamAvailable),
-        widget.loadedImagePath or "-", tostring(widget.imagePixels or 0)))
 end
 
 local function updateResources(widget)
@@ -1792,8 +1785,6 @@ local function configure(widget)
         end)
     end
     if widget.configError then note(widget.configError) end
-    note("Owner radio test passed: 2026-10-05.")
-    note("Per-model settings: gc*.cfg / counters: gd*.dat")
     group("Model / appearance")
     stringField("Engine brand","engineBrand")
     numberField(widget,"Displacement","engineCC",0,1000,"cc",1)
@@ -1976,9 +1967,6 @@ local function menu(widget)
         {"Accept RX counters...",function()
             if not validWidget(widget) then return end
             askAction(widget,acceptRxCounters,"Accept RX counters?","Check battery charge and mAh. Ignition must be OFF.") end},
-        {"Memory snapshot",function()
-            if not validWidget(widget) then return end
-            memorySnapshot(widget) end},
     }
 end
 local function init()
