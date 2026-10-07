@@ -2,261 +2,303 @@
 
 [Home](../README.md) | [Norsk](Konfigurasjon-norsk.md) | [Installation](GasDeck.md)
 
-The layout examples use illustrative readings. The menu and configuration images
-show the widget in ETHOS.
+This walkthrough uses a TD SR18 with two RX batteries and an AES II with one RPM
+and one temperature display. Follow **Configure widget** from top to bottom.
+Sensor names can be renamed in ETHOS; select the source with the correct reading
+and unit. The menu images show the simulator's native fields without connected
+TD SR18/AES II hardware; the tables give the sensor names to select on your radio.
+Dashboard examples use illustrative readings.
+Fields that do not apply to the selected method are grey and inactive.
+ETHOS's source picker can show other sensor types too; check the unit before selecting.
 
-Open the widget menu to choose **Flight log** or **Flight diagnostics**.
-Scroll down and choose **Configure widget** to change settings.
+Open the widget menu, scroll down and choose **Configure widget**.
 
 <table>
 <tr>
-<td><img src="images/gasdeck-widget-menu.png" alt="GasDeck widget menu, upper choices"><br><b>Widget menu</b></td>
-<td><img src="images/gasdeck-widget-menu-more.png" alt="GasDeck widget menu, lower choices"><br><b>Scroll down for Configure widget</b></td>
+<td><img src="images/gasdeck-widget-menu.png" alt="GasDeck widget menu"><br><b>Widget menu</b></td>
+<td><img src="images/gasdeck-widget-menu-more.png" alt="Configure widget in the lower menu"><br><b>Configure widget</b></td>
 </tr>
 </table>
 
-## 1. Model and appearance
+## 1. Model / appearance
 
-Open **Configure widget > Model / appearance**. Name follows the active ETHOS model.
-The layout examples use **Engine brand = Great Power**, **Displacement = 38 cc**.
-
-| Field | Choices and purpose |
-| --- | --- |
-| Engine brand / Displacement | Display information; configure RPM calibration in the sensor or ETHOS. |
-| Engine count | 1-4; independent of visible RPM/temperature counts. |
-| Background | Radio theme, Black or Custom. |
-| Background color / Accent color | Custom palette; theme mode follows the radio. A golden normal accent is not a warning. |
-| Font file | Leave blank for built-in fonts, or choose an ETHOS-supported font. |
-| Image source / Image file | Selected model, another image file or Hidden. |
+Enter your engine's **Engine brand**, **Displacement** and **Engine count**.
+For this single-engine example, use **Engine count = 1**.
+Keep **Image source = Selected model** to use the active ETHOS model's picture.
+Leave **Font file** blank for the radio's built-in fonts.
 
 ![Model settings](images/gasdeck-config-model.png)
 
-This configuration image shows the defaults: no engine brand, 60 cc, one engine
-and **Radio theme**.
+## 2. RX battery 1, then RX battery 2
 
-## 2. Configure each RX battery
+Set **Chemistry** and **Cells** to match each actual battery.
 
-**RX battery 1** and **RX battery 2** have independent chemistry, cells, capacity and
-sources. Defaults: LiPo, 2S, 2500 mAh, Consumed mAh.
-
-| Field | Meaning |
-| --- | --- |
-| Chemistry / Cells / Capacity | LiPo or LiFe, 1-8 cells, 100-20000 mAh; match the actual pack. |
-| Remaining from | Consumed mAh, Percent sensor or explicit Voltage estimate. |
-| Voltage source | Pack voltage, not regulated output when estimating pack capacity. |
-| Consumed mAh / Percent source | Individual pack consumption or remaining percent. |
-| Current source | Optional individual current; central total current is selected separately. |
-
-Remaining charge uses the configured capacity and each pack's consumption.
-A 2500 mAh pack with 550 mAh consumed shows 78%. Check each consumption sensor
-after charging and reset it when required. GasDeck does not reset the sensors.
-For **Percent sensor**, select a remaining-charge source in **%**.
-
-Do not use one combined counter for both packs: dual-feed current sharing can be uneven.
-Select **RX total current / RX total consumed** under **RX / ignition** for the center fields.
-
-If an RX meter becomes unknown after a consumption-counter reset, check the
-battery charge and current mAh readings. Exit preview, confirm ignition OFF,
-then choose **Accept RX counters...** in the widget menu and press **Confirm**.
-This accepts the current readings for both RX batteries. It does not reset any
-sensor, set charge to 100%, change the flight count or refuel the tank.
-With **Consumed mAh**, missing or invalid readings remain unknown.
-
-![Battery settings](images/gasdeck-config-battery-sources.png)
-
-Capacity colors: green >40%, yellow <=40%, orange <=35%, red <=30%. Unknown is
-a neutral empty meter with --%, not full. Voltage numbers themselves are neutral.
-
-### LiFe and EST
-
-Prefer individual consumed mAh or measured percent. Explicit Voltage estimate shows
-**EST** and is approximate, especially for LiFe's flat curve and voltage sag.
-**Alert RX estimate** defaults Off; enable deliberately if estimates should trigger alerts.
-
-![Two LiFe packs](images/gasdeck-life-batteries.png)
-
-## 3. Ignition and TX
-
-**Ignition status** can be switch, logical source, channel or actual telemetry status.
-**Ignition ON above** defaults to 0; ON requires a value strictly above the threshold.
-Confirm both source states before using qualification.
-
-- ON: green; allows flight qualification with the other gates.
-- OFF: red; pauses the same session.
-- Missing/invalid: neutral --; never treated as confirmed OFF.
-
-![Ignition OFF](images/gasdeck-ignition-off.png)
-
-![Missing telemetry](images/gasdeck-telemetry-unavailable.png)
-
-A switch reports the commanded state; it does not confirm actual ignition power.
-**Refuel...**, **Finish flight...** and **Accept RX counters...** require valid
-ignition OFF. The widget does not switch the ignition.
-**TX voltage** selects a source or uses the available built-in transmitter battery source.
-
-## 4. RPM and temperature layouts
-
-**AES engine sensors** independently sets **RPM displays** and **Temp displays** to 0-4.
-Select actual **RPM 1-4 source** and **Temp 1-4 source** values; extra slots do not create sensors.
-
-| Example | RPM | Temperatures |
+| Field | RX battery 1 | RX battery 2 |
 | --- | --- | --- |
-| One engine / two monitored points | 1 | 2 |
-| Multi-cylinder/components | 1 | 4 |
-| Four engines | 4 | 4 |
-| Fuel-only lower deck | 0 | 0 |
+| Remaining from | Voltage estimate | Voltage estimate |
+| Voltage source | RxBatt1 — V | RxBatt2 — V |
 
-![One RPM, two temperatures](images/gasdeck-single-engine.png)
+With this method, voltage, chemistry and cell count determine the remaining-charge
+estimate. It is marked **EST** and is approximate, especially with LiFe.
+**Capacity**, **Consumed mAh** and **Percent source** are inactive for this method.
+The combined **RxCurrent** belongs in the next section.
 
-![Four temperatures](images/gasdeck-four-temperatures.png)
+![RX battery 1 with Voltage estimate](images/gasdeck-setup-rx1.png)
 
-![Four engines, three actual RF slots](images/gasdeck-four-engines.png)
+![RX battery 2 with Voltage estimate](images/gasdeck-setup-rx2.png)
 
-**RPM style**: Numeric or Retro LCD. **RPM scale max** defaults to 10000 rpm and
-**RPM red zone** to 85%. These are display settings, not a rev limiter or engine-specific
-safe RPM. Configure sensor/AES/ETHOS pulse/pole settings to report mechanical RPM.
-MAX is the observed session peak.
+## 3. RX / ignition
 
-**Temperature unit**: Celsius/Fahrenheit. **Temp warning / Temp critical** default
-150/180 degrees Celsius even with Fahrenheit display. Set appropriate manufacturer
-and sensor-location limits for your engine.
-Normal text below warning, yellow at warning, red at critical.
+| Field | Select |
+| --- | --- |
+| RX total current | RxCurrent — A |
+| RX total consumed | Your calculated Consumption sensor, for example RxConsuption — mAh |
+| Ignition status | Your ignition switch, channel or actual status source |
+| Ignition ON above | Usually 0; verify that both ON and OFF display correctly |
+| TX voltage | Your transmitter battery source, or leave blank for the built-in source |
 
-![Numeric RPM](images/gasdeck-numeric-rpm.png)
+**RxConsuption** is a user-created sensor name, not a separate factory measurement.
+You can call it **RxConsumption** or another useful name. It shows combined RX
+consumption and cannot tell how much came from each battery.
 
-![Fuel-only deck](images/gasdeck-fuel-only.png)
+### If consumed mAh is missing
+
+1. Open **Model > Telemetry**, discover **RxCurrent** and check that it reports **A**.
+2. Choose **Create calculated sensor > Consumption**. If there is a **Sensors**
+   tab, first open its **+** menu.
+3. Set **Source = RxCurrent**, **Unit = mAh**, a suitable **Range** and a useful name.
+4. Enable **Persistent** and leave the automatic **Reset** source unset.
+5. After fully charging both packs covered by this counter, use **Reset** in the
+   calculated sensor's edit screen.
+6. Select that calculated sensor in GasDeck's **RX total consumed**.
+
+Do not reset RX consumption on ignition changes or RF loss. Persistent retains the
+reading across radio restarts; it cannot recover consumption while current data
+was missing. See [ETHOS Consumption sensors](https://ethos-doc.frsky-rc.com/model-setup/telemetry/#consumption-sensor).
+
+![RX / ignition source fields](images/gasdeck-setup-rx-total.png)
+
+## 4. AES engine sensors
+
+| Field | Select |
+| --- | --- |
+| RPM displays | 1 |
+| Temp displays | 1 |
+| RPM 1 source | AES RPM 1 — r/m (rpm), sometimes named AESRPM1 |
+| Temp 1 source | AES temp. 5 — °C |
+| Temperature unit | Celsius, or Fahrenheit if preferred |
+
+**Temp 1** means the first display slot; it can show AES temperature input 5.
+Choose the connected sensor that gives a plausible temperature.
+Set **RPM scale max**, **RPM red zone**, **Temp warning** and **Temp critical** for
+your engine. These display limits do not control the engine.
+
+![One RPM and one temperature display](images/gasdeck-setup-engine.png)
+
+![Temperature source fields](images/gasdeck-setup-temperature.png)
 
 ## 5. Fuel / flowmeter
 
-Enter actual **Tank capacity** and **Refill amount**, defaults 500 ml each.
-Default **Reserve / warning** is 20%, **Flow calibration** 100%.
+| Field | Select or enter |
+| --- | --- |
+| Tank value from | Integrate flow |
+| Tank capacity | Actual tank volume in ml |
+| Refill amount | Fuel in the tank after filling; for full tank, use Tank capacity |
+| Flow source | AES flow — ml/min |
+| Flow input units | Auto when the sensor reports ml/min (ETHOS may label it ml/m) |
+| Flow calibration | 100% initially; adjust after checking measured consumption |
+| Reserve / warning | Your chosen reserve, for example 20% |
 
-| Tank value from | Sources | Calculation |
-| --- | --- | --- |
-| Capacity - consumed | Fuel used source | Loaded minus consumption since confirmed refill. |
-| Integrate flow | Flow source | Consumption calculated from flow; confirm Refuel after restart. |
-| Remaining volume | Remaining source | Direct sensor ml/L. |
-| Remaining percent | Remaining source | Sensor percent; configured tank volume gives displayed ml. |
+Use **AES flow**, the current flow rate. **AES avg. flow** and **AES max flow** are
+different readings and should not drive integration.
+**Fuel used source**, **Remaining source** and **Volume input units** are inactive
+for **Integrate flow**.
 
-**Flow input units**: Auto, ml/min, L/min, ml/s. **Volume input units**: Auto, ml, L.
-ETHOS ml/m means ml/min. Auto uses the source's unit; select the correct unit if mislabeled.
-Flow rate, cumulative consumption and remaining volume are different values.
-Calibration applies only to integrated flow.
-
-![Fuel settings](images/gasdeck-config-fuel.png)
+![Integrate flow settings](images/gasdeck-setup-fuel.png)
 
 ### Refuel and data gaps
 
-Fill the tank and set **Refill amount** to the volume loaded. Exit preview and,
-with valid ignition OFF, choose **Refuel...** in the widget menu and press **Confirm**.
-This starts a new flight session and updates the consumption/flow fuel estimate;
-it does not reset sensors. Confirm the first real refill before relying on that estimate.
+Fill the tank, set **Refill amount**, then choose **Refuel... > Confirm** in the
+widget menu or fuel settings. Exit **Synthetic preview** first.
 
-An unexpected fuel-consumption counter reset makes the estimate unknown.
+Confirmation works immediately with the model switched off or ignition ON.
+If the sensor is offline, the confirmation is registered even though the tank
+meter stays unknown. Switch on the model: the estimate appears when the first
+valid flow reading arrives. Consumption before that reading cannot be recovered.
 
-Flow integration never assumes full after radio/widget restart. Confirm a real refill.
-Missing flow readings can make the estimate unknown until another confirmed
-refill. Missing consumption cannot be reconstructed.
-Direct remaining sensors are not overwritten by Refuel. Check hardware calibration,
-fuel compatibility, mounting, air bubbles and measurement range independently.
-
-Tank reserve segments are red. At/below the selected reserve, remaining amount is red;
-normal fuel uses the accent, not battery thresholds.
-
-![Low fuel and RX colors](images/gasdeck-low-fuel.png)
+Refuel is blocked while a counted flight is still running; the dialog explains why.
+A paused flight is completed, keeping its count and qualified log.
+Once flow measurement has started, an unobserved gap makes the estimate unknown
+until another confirmed refill. Confirm an actual refill again after a radio/widget
+restart. Refuel does not reset the AES or any telemetry sensor.
 
 ## 6. Alerts
 
-**Low fuel alert / Low RX alert** default On; **Alert RX estimate** defaults Off.
-Select **Audio folder**, **Fuel WAV** and **RX battery WAV** individually.
-**Repeat interval**: default 15 s, range 1-600 s. Suitable PCM WAV: 32 kHz, mono, 16-bit.
-Missing/invalid files fall back to a tone. Alerts wait for the current sound to finish.
-Fuel uses reserve, RX uses <=30%. Synthetic preview never plays alerts. No sounds are bundled.
+Choose **Low fuel alert**, **Low RX alert** and the **Repeat interval** you want.
+**Alert RX estimate** defaults Off; enable it deliberately for this voltage-based
+battery setup. Fuel alerts use **Reserve / warning**; RX alerts use 30%.
+
+For spoken alerts, select **Audio folder**, **Fuel WAV** and **RX battery WAV**.
+No sounds are bundled. Missing or invalid files use a tone.
 
 ## 7. RF sources / limits
 
-Choose 1-3 **RF displays** and actual sources. Labels follow ETHOS, e.g. RSSI 2.4G
-or VFR 900M; dB/% is retained without a reading. **Log RF 1-3 source** may differ
-from the main view; blank reuses that dashboard slot.
+| Field | Example |
+| --- | --- |
+| RF displays | 2 |
+| RF 1 source | RSSI 2.4G — dB |
+| RF 1 profile | ACCESS / TD / TW |
+| RF 2 source | RSSI 900M — dB |
+| RF 2 profile | ACCESS / TD / TW |
+
+Leave **Log RF 1 source / Log RF 2 source** blank to graph the selected RSSI sources.
+Alternatively select **VFR 2.4G / VFR 900M** to graph valid-frame rate in **%**.
+RSSI signal strength and VFR frame delivery are separate measurements.
+
+![Two RF displays and their source fields](images/gasdeck-setup-rf.png)
+
+## 8. Flight session
+
+Leave **Enable log** Off if you only want the dashboard.
+To count flights, enable it and select **Throttle source**; the **Ignition status**
+selected earlier is the flight gate. Check raw throttle endpoints in
+**Flight diagnostics** before setting **Throttle low/high (raw)**.
+
+Default qualification needs 60 seconds and at least 5 seconds above 50% normalized
+throttle. Set **Airborne gate** only if you have a suitable source.
+Blank **Power loss source** uses either valid positive RX voltage.
+Ignition OFF pauses the same session; ON resumes it without counting twice.
+
+![Flight session settings](images/gasdeck-setup-flight.png)
+
+## 9. Preview and final check
+
+Keep **Synthetic preview** Off for real telemetry.
+With the model on, check both battery voltages, combined RX current/consumption,
+RPM, temperature, live flow and RF readings. Confirm Refuel after filling and check
+that the fuel amount matches **Refill amount** when a valid flow reading is available.
+
+## Advanced reference
+
+### Battery methods and sensor type
+
+| Remaining from | Required value | How it is used |
+| --- | --- | --- |
+| Voltage estimate | Individual pack voltage in V; matching chemistry/cells | Approximate charge from voltage, marked EST |
+| Consumed mAh | Individual pack consumption in mAh; matching Capacity | Remaining capacity from that pack's consumption |
+| Percent sensor | Individual remaining charge in % | Uses the supplied percentage |
+
+**Voltage source** still displays pack voltage and supports flight power tracking.
+A source's name does not change its type or units.
+
+Do not halve combined **RxConsuption** or assign it to both batteries.
+Individual consumed-mAh remaining charge stays unknown without its own measurement.
+GasDeck does not calculate mAh from its current fields or add individual counters.
+
+An ETHOS calculated **Percent** sensor can provide a normalized **%** source.
+If it is derived from voltage, it is still a voltage estimate: verify its empty/full
+mapping for the battery and do not treat it as measured capacity. Editing a raw
+voltage source's **Range** alone does not turn its value in V into a valid % reading.
+See [ETHOS Percent sensors](https://ethos-doc.frsky-rc.com/model-setup/telemetry/#percent-sensor).
+
+After an unexpected individual consumption-counter reset, check actual charge and
+the mAh readings. Exit preview, confirm valid ignition OFF and choose
+**Accept RX counters... > Confirm**. It accepts both readings without resetting
+sensors, setting charge to 100%, changing the flight count or refuelling.
+Missing or invalid readings remain unknown.
+
+Battery colors: green >40%, yellow ≤40%, orange ≤35%, red ≤30%.
+Unknown shows a neutral empty meter with **--%**. Voltage numbers are neutral.
+
+### Other fuel methods and units
+
+| Tank value from | Source/type | Settings used |
+| --- | --- | --- |
+| Capacity - consumed | Fuel used source — cumulative ml or L | Tank capacity, Refill amount, Volume input units; confirmed starting counter |
+| Integrate flow | Flow source — ml/min, L/min or ml/s | Tank capacity, Refill amount, Flow input units, Flow calibration |
+| Remaining volume | Remaining source — sensor-reported remaining ml or L | Tank capacity and Volume input units |
+| Remaining percent | Remaining source — sensor-reported remaining % | Tank capacity converts % to displayed ml |
+
+**Flow source / Flow input units** also drive the FLOW display in the other methods.
+Flow rate, cumulative consumption and remaining volume are different sensor types.
+Auto follows the reported unit; select the correct override if a source is mislabeled.
+**Flow calibration** affects only integrated flow.
+
+For **Capacity - consumed**, an offline Refuel is registered and waits for the first
+valid counter reading as its new starting point. Earlier consumption cannot be
+reconstructed. An unexpected counter decrease makes the estimate unknown.
+
+**AES res. vol.** (ml) and **AES res. pect.** (%) can be selected for the corresponding
+remaining method only after the tank capacity and refill/reset behavior are configured
+on the AES/ETHOS side. Check those readings against an actual full tank before use.
+GasDeck's Refuel does not update that external tank configuration or reset its readings.
+Use the reset procedure supported by your AES firmware.
+See the [FrSky AES II manual](https://www.flyingtech.co.uk/wp-content/uploads/2024/05/Advanced-Engine-Suite-II-Manual.pdf).
+
+Check flowmeter calibration, fuel compatibility, mounting, air bubbles and range.
+Tank reserve segments and the remaining amount at/below reserve are red;
+normal fuel uses the accent color.
+
+### Layout, image and alert options
+
+RPM and temperature display counts are independent, from 0 to 4 each. More display
+slots do not create sensors. RPM calibration belongs in the sensor/AES/ETHOS.
+MAX is the observed peak. Temperature warning/critical values are entered in °C,
+also when the displayed unit is Fahrenheit.
+
+Background can follow **Radio theme**, be **Black** or use **Custom** colors.
+A golden accent is the normal palette. Use an RGB/RGBA 8-bit PNG model image;
+large dimensions consume more memory. See [image and font setup](GasDeck.md#model-image-and-fonts).
+
+WAV files should be PCM, 32 kHz, mono, 16-bit. Repeat interval is 1–600 seconds;
+alerts wait for the current sound to finish. Preview plays no alerts.
+
+### RF profiles
 
 | Profile | RSSI warning / critical | VFR early / low |
 | --- | --- | --- |
 | ACCESS / TD / TW | 35 / 32 dB | 95 / 50% |
 | ACCST | 45 / 42 dB | 95 / 50% |
-| Custom | Each slot's configured dB limits | Each slot's configured percent limits |
+| Custom | Your dB limits | Your % limits |
 
-**RSSI scale min/max** controls display range, default 0-100 dB, not radio alarms.
-Normal is accent, warning yellow, critical red, unknown neutral.
-VFR reflects valid-frame delivery, RSSI signal strength. VFR can reveal delivery drops
-clearly; RSSI still helps show link margin. 95% is an early visual marker, not a universal
-manufacturer alarm. Match receiver documentation and keep native alerts.
+RSSI scale defaults to 0–100 dB and sets the display range, not a radio alarm.
+Unknown RF values are neutral. Choose only sources your receiver actually reports;
+antenna count does not establish the number of readings. Keep native radio alerts.
 
-![RF settings](images/gasdeck-config-rf.png)
+### Flight completion, diagnostics and storage
 
-Choose only RF sources actually reported by your receiver. Antenna count may
-differ from the number of available readings; some receivers combine VFR.
+**Finish flight... > Confirm** requires preview Off and valid ignition OFF.
+It ends the session, retains the last qualified log and permits a new flight,
+without changing fuel or the count. Use Refuel after actually filling the tank.
 
-## 8. Flight session
+Power loss delay defaults to 10 seconds (3–120). One missing RX feed does not finish
+the session while the other remains valid. Extended RF loss may resemble power loss.
+Optional **Auto-open log** waits that delay plus **Extra log delay** (default 5 seconds);
+returning power or manual view/settings changes cancel it. Manual Finish/Refuel does
+not open the log automatically.
 
-Logging defaults Off. Select **Throttle source** and **Ignition status**; no separate ARM.
+Only a qualified flight replaces the retained log. Flight time counts qualifying
+intervals; RF history includes pauses. **Flight time from** can select an ETHOS timer.
+Bench running can qualify; disable logging during bench work when appropriate.
 
-| Field | Default / meaning |
-| --- | --- |
-| Flight minimum | 60 s accumulated qualifying time; range 60-3600 s. |
-| Throttle gate / High throttle time | >=50% normalized throttle for >=5 s, configurable. |
-| Throttle low/high (raw) | Use raw endpoints from Flight diagnostics, such as -1024/+1024; reversed endpoints supported. |
-| Airborne gate | Optional; blank and Always on pass. Not an airborne detector. |
-| Power loss source | Override; otherwise either positive valid RX voltage keeps power alive. |
-| Power loss delay | 10 s sustained loss; 3-120 s. |
-| Auto-open log / Extra log delay | Off / 5 s; opens once after qualified power-loss completion. |
-| Flight time from / ETHOS timer | GasDeck qualifying session time or selected native timer. |
+**Flight diagnostics** shows throttle, ignition, airborne/power gates and the blocking
+reason. **Reset live peaks** clears maxima without changing the count.
+**Reset flight count** is per model; finish the session with valid OFF first.
+The widget shows ignition status and never switches ignition or throttle.
 
-![Flight settings](images/gasdeck-config-flight.png)
+Settings and count are saved per model; detailed logs and graphs clear on radio restart.
+Back up the SD card and model together, and check sources if you copy a model.
 
-Ignition OFF/unknown pauses but retains statistics/history. ON resumes without recounting.
-With default power tracking, one missing RX feed does not end the session while
-the other remains valid. Extended RF loss may imitate power loss.
-If batteries stay connected between sorties, exit preview, confirm ignition OFF,
-then choose **Finish flight...** and press **Confirm**. This ends the current session,
-keeps the last qualified log and allows a new flight. It does not reset the count or
-change fuel. Use **Refuel...** instead when you have actually refilled the tank.
-
-The last qualified log remains after switching off the aircraft and while the next
-flight qualifies. Only a qualified flight replaces it. RF history includes pauses;
-flight time counts qualifying intervals. Bench running can qualify, so disable
-logging during bench work when appropriate.
-
-Auto-open waits Power loss delay plus Extra log delay. Returning power or manual
-view/settings changes cancel it. Enabling later does not replay old logs.
-Manual Finish/Refuel is not the power-loss auto-open trigger.
-
-![Synthetic retained flight log](images/gasdeck-flight-log.png)
-
-## 9. Diagnostics, menu and preview
-
-**Flight diagnostics** shows raw/normalized throttle, ignition, airborne gate, power
-and qualifying time. Follow the blocking reason; LOG DISABLED is not an error.
-**Reset live peaks** clears current maxima, not the counter.
-**Reset flight count** is per model; finish the active session with confirmed OFF first.
-
-![Diagnostics](images/gasdeck-diagnostics.png)
-
-**Synthetic preview** shows example readings without counting flights or playing
-alerts. Turn it Off to use live readings and the confirmation actions.
-
-## 10. Storage and troubleshooting
-
-Settings, source assignments and flight count are saved for each model.
-Back up the SD card and ETHOS model together. Check sources and battery settings
-if you copy a model. Detailed flight logs and graphs are cleared on radio restart.
+### Troubleshooting
 
 | Symptom | Check |
 | --- | --- |
-| Widget missing | Check scripts/GasDeck/main.lua, restart ETHOS and review Lua errors in Info. |
-| Empty RX meters | Individual method/source/capacity, Preview Off. |
-| Unknown fuel after data gap | Missing flow cannot be reconstructed; confirm a real refill. |
-| No counted flight | Logging, ignition, normalized throttle, power/time gates; diagnostics. |
-| OFF does not create another flight | Intentional; Finish flight / Refuel between sorties. |
-| No image | Correct model path, RGB/RGBA 8-bit PNG and suitable dimensions; Suite Image Manager. |
+| Widget missing | scripts/GasDeck/main.lua, restart ETHOS and review Lua errors in Info |
+| Empty RX meter | Selected method/source, chemistry/cells or Capacity, preview Off |
+| Fuel unknown after offline Refuel | Confirmation is registered; switch on the model and wait for a valid selected fuel reading |
+| Unknown fuel after a flow gap | Missing consumption cannot be recovered; confirm an actual refill |
+| No counted flight | Enable log, ignition, throttle endpoints and qualification gates; diagnostics |
+| Ignition OFF does not start another flight | Finish flight or Refuel between sorties |
+| No image | Model path, RGB/RGBA 8-bit PNG and suitable dimensions; Suite Image Manager |
 
 [Installation](GasDeck.md) | [Home](../README.md)

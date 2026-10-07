@@ -2,9 +2,9 @@
 
 A full-screen receiver-power, gasoline-engine and fuel dashboard for FrSky ETHOS 1.6.6 and 26.1.2.
 
-**GasDeck 2026.10-v2: latest release. Physical X20RS testing passed on ETHOS 26.1.2.**
+**GasDeck 2026.10-v3: latest release. Physical radio testing passed.**
 
-[Download GasDeck-2026.10-v2.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v2/GasDeck-2026.10-v2.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v2)
+[Download GasDeck-2026.10-v3.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v3/GasDeck-2026.10-v3.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v3)
 
 ![GasDeck: RPM, temperatures, dual RX batteries and fuel](docs/images/gasdeck-single-engine.png)
 
@@ -38,10 +38,10 @@ The screenshots use illustrative values and example layouts.
 
 ## Install GasDeck
 
-1. Download [GasDeck-2026.10-v2.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v2/GasDeck-2026.10-v2.zip) from the release assets, not GitHub's automatic source archive.
+1. Download [GasDeck-2026.10-v3.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v3/GasDeck-2026.10-v3.zip) from the release assets, not GitHub's automatic source archive.
 2. Extract `scripts/GasDeck` onto the radio SD card; the final path is `scripts/GasDeck/main.lua`.
 3. Remove any existing `scripts/GasDeck/main.luac`, restart ETHOS and select **GasDeck** in a full-screen widget area.
-4. Configure actual sources, capacities, ignition and fuel method. Turn **Synthetic preview** off for live operation.
+4. Follow the [TD SR18 / AES II walkthrough](docs/Configuration.md) or [norsk veiledning](docs/Konfigurasjon-norsk.md) to select sources in menu order. Turn **Synthetic preview** off for live operation.
 
 The ZIP includes installation instructions, license and notices. Keep a backup
 of your model and widget settings when updating.
@@ -58,8 +58,9 @@ Enable logging, select throttle and ignition. Defaults: 60 s qualifying time inc
 5 s above 50% normalized throttle. Ignition OFF/unknown pauses the same session;
 ON again does not count a second flight. Blank airborne gate is optional.
 
-Gasoline sorties often retain receiver batteries. Use **Finish flight** or confirm an
-actual **Refuel**, with valid ignition OFF, between sorties. Loss of both RX feeds for
+Gasoline sorties often retain receiver batteries. Between sorties, use **Finish flight**
+with valid ignition OFF, or confirm an actual **Refuel**. Refuel also works with the
+model off or ignition ON; a qualified active flight blocks it. Loss of both RX feeds for
 **Power loss delay** also ends the session; RF failure can resemble disconnected power.
 The last qualified log remains until a new flight qualifies. Only the counter survives
 radio restart; graphs/summary stay in RAM. Automatic log opening defaults Off.

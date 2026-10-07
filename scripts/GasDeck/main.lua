@@ -2,7 +2,7 @@
 -- Copyright (c) 2026 bliatun-code and Ethos Widgets contributors.
 -- GasDeck: receiver power, gasoline engines and fuel telemetry for ETHOS.
 -- Read-only instrumentation. This widget NEVER controls ignition or throttle.
-local VERSION = "2026.10-v2"
+local VERSION = "2026.10-v3"
 local MAX_IMAGE_PIXELS, BITMAP_RESERVE = 160000, 65536
 local FLIGHT_SESSION
 local HISTORY_POINTS, GRAPH_BINS = 180, 48
@@ -43,7 +43,7 @@ local SETTING_DEFS = {
     {"fuelMethod",1,1,4},
     {"tankCapacity",500,10,20000},
     {"fuelLoaded",500,10,20000},
-    {"fuelBaselineCenti",0,0,100000000},
+    {"fuelBaselineCenti",0,-1,100000000}, -- -1: confirmed refill, waiting for the counter
     {"flowUnit",1,1,4},
     {"volumeUnit",1,1,3},
     {"flowCorrection",100,10,300},
@@ -185,20 +185,29 @@ local DeckCore = (function()
         return value.name, value.unit == UNIT_PERCENT and "%" or value.unit == UNIT_DB and "dB" or "?"
     end
     local function metadata(widget, slot, source, clock, name, label, rf)
-        widget.metadata = widget.metadata or {}
-        local cached = widget.metadata[slot]
+        if not validWidget(widget) then return name, rf and (not source and "dB" or "?") or label, 0 end
+        local cache = widget.metadata or {}
+        widget.metadata = cache
+        local previous = cache[slot]
+        local cached = previous
         if not cached or cached.source ~= source or clock < cached.clock or clock >= cached.clock + 5 then
             cached = details(source, name, label)
             cached.source, cached.clock = source, clock
-            widget.metadata[slot] = cached
         end
-        if source ~= nil and source ~= false and source ~= "" then
+        local canonicalUnit = cached.unit
+        if validWidget(widget) and source ~= nil and source ~= false and source ~= "" then
             local ok, unit = pcall(function() return source:unit() end)
-            cached.unit = ok and unit or nil -- canonical units must stay live
+            canonicalUnit = ok and unit or nil -- canonical units must stay live
+        end
+        -- Native source calls can reenter changed/destroy or refresh this slot.
+        -- Publish only into the same live cache; never revive invalidated state.
+        if validWidget(widget) and widget.metadata == cache and cache[slot] == previous then
+            cached.unit = canonicalUnit
+            cache[slot] = cached
         end
         local unit = cached.label
         if rf then unit = not source and "dB"
-            or cached.unit == UNIT_PERCENT and "%" or cached.unit == UNIT_DB and "dB" or "?" end
+            or canonicalUnit == UNIT_PERCENT and "%" or canonicalUnit == UNIT_DB and "dB" or "?" end
         return cached.name, unit, cached.decimals
     end
     -- Monotonic consumed-mAh high-water mark, separate from flight qualification.
@@ -348,8 +357,14 @@ local validWidget, sample = DeckCore.validWidget, DeckCore.sample
 local sourceDetails, rfDetails = DeckCore.sourceDetails, DeckCore.rfDetails
 
 
+-- changed() invalidates the active poll as well as scheduling the next one.
+local function validPoll(widget)
+    return validWidget(widget) and widget.nextPoll ~= 0
+end
+
 local function changed(widget, resetAlarm)
     if not validWidget(widget) then return end
+    widget.changeRevision=(widget.changeRevision or 0)+1
     widget.refresh = true
     widget.nextPoll = 0
     widget.metadata = nil
@@ -847,18 +862,21 @@ local function rxBattery(widget,data,index,clock,key)
     local prefix="rx"..index
     local voltage=positive(sample(widget[prefix.."Source"],"voltage"))
     local used=sample(widget[prefix.."UsedSource"],"capacity")
+    local current=sample(widget[prefix.."CurrentSource"],"current")
+    local percent,estimated
+    if widget[prefix.."Method"]==2 then percent=percentReading(widget[prefix.."PercentSource"]) end
+    if not validPoll(widget) then return end
     if used and used<0 then used=nil end
     local trustedUsed,reset=used,false
     if not widget.preview then
         trustedUsed,reset=DeckCore.batteryUsed(widget,prefix,widget[prefix.."UsedSource"],
             widget[prefix.."Source"],voltage,used,widget[prefix.."Capacity"],clock,key)
+        if not validPoll(widget) then return end
     end
     data[prefix.."CounterReset"]=reset
-    local percent,estimated
     if widget[prefix.."Method"]==1 then
         percent=trustedUsed and clamp((widget[prefix.."Capacity"]-trustedUsed)*100/widget[prefix.."Capacity"],0,100) or nil
-    elseif widget[prefix.."Method"]==2 then percent=percentReading(widget[prefix.."PercentSource"])
-    else
+    elseif widget[prefix.."Method"]~=2 then
         local chemistry=TYPES[widget[prefix.."Chemistry"]]
         percent=voltage and clamp((voltage/widget[prefix.."Cells"]-chemistry.empty)
             *100/(chemistry.full-chemistry.empty),0,100) or nil
@@ -866,7 +884,7 @@ local function rxBattery(widget,data,index,clock,key)
     end
     if percent~=nil then percent=round(percent) end -- color/alert agree with displayed integer %
     data[prefix],data[prefix.."Used"],data[prefix.."Percent"],data[prefix.."Estimated"]=voltage,used,percent,estimated
-    data[prefix.."Current"]=sample(widget[prefix.."CurrentSource"],"current")
+    data[prefix.."Current"]=current
     if percent and percent<=30 and (not estimated or widget.alarmEstimate) then data.rxLow=true end
 end
 local function ignitionReading(widget)
@@ -877,31 +895,49 @@ local function ignitionReading(widget)
     if value==nil then return nil,category==CATEGORY_TELEMETRY_SENSOR and "SENSOR" or "CMD" end
     return value>widget.ignitionThreshold,category==CATEGORY_TELEMETRY_SENSOR and "SENSOR" or "CMD",value
 end
-local function fuelSignature(widget,key)
+local function fuelSignature(widget,key,baseline)
     return table.concat({key or "",widget.fuelMethod,tostring(widget.flowSource),tostring(widget.fuelUsedSource),
-        tostring(widget.fuelRemainingSource),widget.tankCapacity,widget.fuelLoaded,widget.fuelBaselineCenti,
+        tostring(widget.fuelRemainingSource),widget.tankCapacity,widget.fuelLoaded,baseline or widget.fuelBaselineCenti,
         widget.flowUnit,widget.volumeUnit,widget.flowCorrection},"|")
 end
 local function updateFuel(widget,data,clock,key)
+    local flow=flowReading(widget.flowSource,widget.flowUnit)
+    local used,remaining,percent
+    if widget.fuelMethod==1 then used=volumeReading(widget.fuelUsedSource,widget.volumeUnit)
+    elseif widget.fuelMethod==3 then remaining=volumeReading(widget.fuelRemainingSource,widget.volumeUnit)
+    elseif widget.fuelMethod==4 then percent=percentReading(widget.fuelRemainingSource) end
+    if not validPoll(widget) then return end
     local signature=fuelSignature(widget,key)
+    if not validPoll(widget) then return end
     local state=widget.fuelState
     if not state or state.signature~=signature then
         state={signature=signature,used=0,primed=false}
         widget.fuelState=state
     end
     data.fuelSignature=signature
-    data.flow=flowReading(widget.flowSource,widget.flowUnit)
-    local remaining
+    data.flow=flow
     if widget.fuelMethod==1 then
-        local used=volumeReading(widget.fuelUsedSource,widget.volumeUnit)
+        if widget.fuelBaselineCenti<0 and used~=nil then
+            -- Offline confirmation cannot know the cumulative counter. Start at
+            -- its first valid reading; do not subtract an old tank's baseline.
+            local baseline=round(used*100)
+            local nextSignature=fuelSignature(widget,key,baseline)
+            if not validPoll(widget) then return end
+            widget.fuelBaselineCenti=baseline
+            state.signature=nextSignature
+            data.fuelSignature=state.signature
+            pcall(model.dirty)
+            if not validPoll(widget) then return end
+        end
         local baseline=widget.fuelBaselineCenti/100
-        if used~=nil then
+        if baseline>=0 and used~=nil then
             -- A counter reset is not evidence of a refilled tank.
             if used+0.5<baseline or (state.previousUsed and used+0.5<state.previousUsed) then state.uncertain=true end
             state.previousUsed=used
             if not state.uncertain then remaining=clamp(widget.fuelLoaded-math.max(0,used-baseline),0,widget.tankCapacity) end
         end
-        data.fuelNote=state.uncertain and "COUNTER RESET: REFUEL" or "CAPACITY - USED / EST"
+        data.fuelNote=baseline<0 and "REFUEL SET: WAITING FOR SENSOR"
+            or state.uncertain and "COUNTER RESET: REFUEL" or "CAPACITY - USED / EST"
         data.fuelEstimated=true
     elseif widget.fuelMethod==2 then
         local dt=state.clock and clock-state.clock or 0
@@ -914,16 +950,17 @@ local function updateFuel(widget,data,clock,key)
             end
             remaining=clamp(widget.fuelLoaded-state.used,0,widget.tankCapacity)
         end
-        state.clock,state.previousFlow=clock,data.flow
+        -- A confirmed refill can wait for an offline flow sensor. Once sampling
+        -- starts, the normal missing-sample/gap guard remains in force.
+        if data.flow~=nil or state.clock then state.clock,state.previousFlow=clock,data.flow end
         data.fuelEstimated=true
         data.fuelNote=not state.primed and "REFUEL TO START ESTIMATE"
-            or state.uncertain and "FLOW GAP: ESTIMATE LOST" or "INTEGRATED FLOW / EST"
+            or state.uncertain and "FLOW GAP: ESTIMATE LOST"
+            or not state.clock and "REFUEL SET: WAITING FOR FLOW" or "INTEGRATED FLOW / EST"
     elseif widget.fuelMethod==3 then
-        remaining=volumeReading(widget.fuelRemainingSource,widget.volumeUnit)
         if remaining and remaining>widget.tankCapacity then remaining=nil end
         data.fuelNote="REMAINING VOLUME SENSOR"
     else
-        local percent=percentReading(widget.fuelRemainingSource)
         remaining=percent and widget.tankCapacity*percent/100 or nil
         data.fuelNote="REMAINING PERCENT SENSOR"
     end
@@ -965,7 +1002,7 @@ local function graphSample(flight,clock,data)
     history.next,history.revision=clock+history.interval,(history.revision or 0)+1
     return true
 end
-local function completeFlight(session,clock)
+local function completeFlight(session,clock,manual)
     local flight=session and session.current
     if not flight then return end
     flight.elapsed,flight.running=clock-flight.started,false
@@ -973,6 +1010,7 @@ local function completeFlight(session,clock)
         session.last=flight
         session.completedSerial=(session.completedSerial or 0)+1
         session.completedAt=clock
+        session.completedManually=manual==true
     end
     session.current,session.revision=nil,session.revision+1
 end
@@ -993,26 +1031,75 @@ local function finishFlight(widget)
     local safe,problem=safeGroundAction(widget)
     if not safe then return false,problem end
     local session=widget.flightSession
-    if session then completeFlight(session,os.clock()) end
+    if session then completeFlight(session,os.clock(),true) end
     widget.autoLogDue,widget.refresh=nil,true
     return true
 end
+local function refuelAllowed(widget)
+    if widget.preview then return false,"Exit preview before changing live state." end
+    local key=modelKey()
+    if not validWidget(widget) then return false,"Widget closed; reopen it before refuelling." end
+    local session=FLIGHT_SESSION and FLIGHT_SESSION.key==key and FLIGHT_SESSION
+    local flight=session and session.current
+    if flight and flight.counted then
+        -- A normal ignition-ON start creates an unqualified candidate, even at
+        -- idle. Only a qualified flight with fresh live gates blocks refuelling.
+        local owner=validWidget(session.owner) and session.owner or widget
+        local revision=owner.changeRevision or 0
+        local on=ignitionReading(owner)
+        local throttle=throttlePercent(owner)
+        local power
+        if selectedSource(owner.powerSource) then power=positive(sample(owner.powerSource,"voltage"))
+        else power=positive(sample(owner.rx1Source,"voltage")) or positive(sample(owner.rx2Source,"voltage")) end
+        local gate=selectedSource(owner.airborneSource)
+        local airborne=not gate or switchOn(gate)
+        local finalKey=modelKey()
+        if not validWidget(widget) or not validWidget(owner) or finalKey~=key
+            or (owner.changeRevision or 0)~=revision or FLIGHT_SESSION~=session or session.current~=flight then
+            return false,"Flight settings changed; confirm the refill again."
+        end
+        if on==true and throttle~=nil and power~=nil and airborne then
+            return false,"Refuel unavailable during an active flight. Pause or finish the flight first."
+        end
+    end
+    return true,nil,session
+end
 local function refuel(widget)
-    local safe,problem=safeGroundAction(widget)
+    local key,revision=modelKey(),widget.changeRevision or 0
+    if not validWidget(widget) then return false,"Widget closed; reopen it before refuelling." end
+    local signature=fuelSignature(widget,key)
+    local safe,problem,session=refuelAllowed(widget)
     if not safe then return false,problem end
-    local used
-    if widget.fuelMethod==1 then
-        used=volumeReading(widget.fuelUsedSource,widget.volumeUnit)
-        if used==nil then return false,"Select a valid fuel-used sensor before refuelling." end
+    local used=widget.fuelMethod==1 and volumeReading(widget.fuelUsedSource,widget.volumeUnit) or nil
+    local flow=flowReading(widget.flowSource,widget.flowUnit)
+    safe,problem,session=refuelAllowed(widget)
+    if not safe then return false,problem end
+    local globalSession=FLIGHT_SESSION
+    local flight=session and session.current
+    local sessionRevision=session and session.revision
+    local counted=flight and flight.counted
+    local owner=session and session.owner
+    local ownerRevision=validWidget(owner) and (owner.changeRevision or 0)
+    local baseline=widget.fuelBaselineCenti
+    if widget.fuelMethod==1 then baseline=used~=nil and round(used*100) or -1 end
+    local nextSignature,clock=fuelSignature(widget,key,baseline),os.clock()
+    local currentSignature=fuelSignature(widget,key)
+    local finalKey=modelKey()
+    if not validWidget(widget) then return false,"Widget closed; reopen it before refuelling." end
+    if finalKey~=key or (widget.changeRevision or 0)~=revision or currentSignature~=signature then
+        return false,"Fuel settings changed; confirm the refill again."
     end
-    if widget.fuelMethod==2 and flowReading(widget.flowSource,widget.flowUnit)==nil then
-        return false,"Select a valid flow sensor before refuelling."
+    if FLIGHT_SESSION~=globalSession or (session and (session.current~=flight or session.revision~=sessionRevision
+        or (flight and flight.counted~=counted) or session.owner~=owner
+        or (ownerRevision and (not validWidget(owner) or (owner.changeRevision or 0)~=ownerRevision)))) then
+        return false,"Flight settings changed; confirm the refill again."
     end
-    finishFlight(widget)
-    if used~=nil then widget.fuelBaselineCenti=round(used*100) end
-    widget.runtimeModel=modelKey()
-    widget.fuelState={signature=fuelSignature(widget,widget.runtimeModel),used=0,primed=true,
-        clock=os.clock(),previousFlow=flowReading(widget.flowSource,widget.flowUnit)}
+    if session then completeFlight(session,clock,true) end
+    widget.autoLogDue=nil
+    widget.fuelBaselineCenti=baseline
+    widget.runtimeModel=key
+    widget.fuelState={signature=nextSignature,used=0,primed=true,
+        clock=flow~=nil and clock or nil,previousFlow=flow}
     widget.lastFuelAlert,widget.nextPoll,widget.refresh=nil,0,true
     changed(widget,true)
     return true
@@ -1024,6 +1111,7 @@ local function updateFlight(widget,data,clock,key)
     local gate=selectedSource(widget.airborneSource)
     if gate then data.airborne,data.gateRaw=switchOn(gate)
     else data.airborne,data.gateOptional=true,true end
+    if not validPoll(widget) then return end
     if not widget.logEnabled or widget.preview or not key then
         if FLIGHT_SESSION and FLIGHT_SESSION.owner==widget then
             FLIGHT_SESSION.owner,FLIGHT_SESSION.lastClock=nil,nil
@@ -1032,15 +1120,19 @@ local function updateFlight(widget,data,clock,key)
         widget.flightSession=nil
         return
     end
-    if not FLIGHT_SESSION or FLIGHT_SESSION.key~=key then FLIGHT_SESSION=newSession(key) end
+    if not FLIGHT_SESSION or FLIGHT_SESSION.key~=key then
+        local session=newSession(key)
+        if not validPoll(widget) then return end
+        FLIGHT_SESSION=session
+    end
+    if not validPoll(widget) then return end
     local session=FLIGHT_SESSION
     widget.flightSession=session
     if session.owner and session.owner~=widget then data.logState="Shared log";data.logCount=session.count;return end
-    session.owner=widget
     local dt=session.lastClock and clamp(clock-session.lastClock,0,1) or 0
-    session.lastClock=clock
     local ready=selectedSource(widget.ignitionSource)~=nil and data.ignition~=nil
         and data.throttlePercent~=nil and data.voltage~=nil
+    if not validPoll(widget) then return end
     if ready and data.armed and data.airborne and not session.current then
         local flight={started=clock,duration=0,highTime=0,counted=false,rfCount=widget.rfCount,
             rpmCount=widget.rpmCount,tempCount=widget.tempCount,maxRPM={},maxTemp={},rpmSources={},tempSources={},
@@ -1050,15 +1142,18 @@ local function updateFlight(widget,data,clock,key)
             local source=selectedSource(widget["graph"..channel.."Source"]) or selectedSource(widget["rssi"..channel.."Source"])
             flight["source"..channel]=source
             flight["name"..channel],flight["unit"..channel]=rfDetails(source,"RF"..channel)
+            if not validPoll(widget) then return end
             flight.history["rf"..channel],flight.history["missing"..channel]={},{}
         end
         for index=1,4 do
             flight.rpmSources[index],flight.tempSources[index]=widget["rpm"..index.."Source"],widget["temp"..index.."Source"]
             flight["rpmName"..index]=sourceDetails(flight.rpmSources[index],"RPM "..index,"")
             flight["tempName"..index]=sourceDetails(flight.tempSources[index],"TEMP "..index,"")
+            if not validPoll(widget) then return end
         end
         session.current=flight;dt=0
     end
+    session.owner,session.lastClock=widget,clock
     local flight=session.current
     if flight then
         if data.voltage==nil then flight.lossSince=flight.lossSince or clock else flight.lossSince=nil end
@@ -1129,7 +1224,7 @@ local function updateAutoLog(widget,data,clock,key)
     local serial=session.completedSerial or 0
     if serial~=widget.autoLogSeen then
         widget.autoLogSeen=serial
-        if widget.autoLogEnabled and session.last and data.voltage==nil then
+        if widget.autoLogEnabled and session.last and not session.completedManually and data.voltage==nil then
             widget.autoLogDue=session.completedAt+widget.autoLogDelay
         end
     end
@@ -1153,13 +1248,19 @@ local function alerts(widget, data, clock)
     if not kind then return end
     local state = kind == "RX" and rx or fuel
     local path = audioPath(widget.audioFolder, kind == "RX" and widget.rxSound or widget.fuelSound)
-    widget.soundCache = widget.soundCache or {}
-    local cached = widget.soundCache[kind]
+    local soundCache = widget.soundCache or {}
+    widget.soundCache = soundCache
+    local cached = soundCache[kind]
     if not cached or cached.path ~= path then
-        cached = {path = path, duration = path ~= "" and audioInfo(path) or nil}; widget.soundCache[kind] = cached
+        cached = {path = path, duration = path ~= "" and audioInfo(path) or nil}
+        -- File I/O can invalidate this lookup; never revive it or play stale audio.
+        if not validWidget(widget) or widget.soundCache ~= soundCache then return end
+        soundCache[kind] = cached
     end
     local played = cached.duration and pcall(system.playFile, path)
+    if not validWidget(widget) or widget.soundCache ~= soundCache then return end
     if not played then pcall(system.playTone, kind == "Fuel" and 1000 or 1400, 250, 50) end
+    if not validWidget(widget) or widget.soundCache ~= soundCache then return end
     DeckCore.alarmPlayed(widget, state, clock, widget.alertInterval, played and cached.duration or 0)
     widget.lastAudioKind = kind
     widget[kind == "Fuel" and "lastFuelAlert" or "lastRxAlert"] = clock
@@ -1280,13 +1381,23 @@ local function prepareFlightGraphs(widget, clock)
 end
 
 
+local showProblem
 local function wakeup(widget)
     if not validWidget(widget) then return end
+    if widget.actionProblem then
+        local problem=widget.actionProblem
+        widget.actionProblem=nil
+        local key=modelKey()
+        if not validWidget(widget) then return end
+        if key==problem.key then showProblem(problem.message) end
+    end
     local clock=os.clock()
     if clock<widget.nextPoll then return end
     widget.nextPoll=clock+0.25
     updateResources(widget)
+    if not validPoll(widget) then return end
     local key=modelKey()
+    if not validPoll(widget) then return end
     if widget.runtimeModel~=key then
         widget.runtimeModel,widget.fuelState=key,nil
         widget.peakRPM,widget.peakTemp={},{}
@@ -1294,11 +1405,16 @@ local function wakeup(widget)
         widget.alertStates,widget.batteryStates,widget.metadata,widget.lastAudioKind=nil,nil,nil,nil
     end
     local colors=palette(widget)
+    if not validPoll(widget) then return end
     local data=widget.scratch
     for name in pairs(data) do data[name]=nil end
     local ok,name=pcall(model.name)
+    if not validPoll(widget) then return end
     data.modelName=ok and name or "GasDeck"
-    rxBattery(widget,data,1,clock,key);rxBattery(widget,data,2,clock,key)
+    rxBattery(widget,data,1,clock,key)
+    if not validPoll(widget) then return end
+    rxBattery(widget,data,2,clock,key)
+    if not validPoll(widget) then return end
     data.current=sample(widget.currentSource,"current")
     data.used=sample(widget.consumptionSource,"capacity")
     if data.used and data.used<0 then data.used=nil end
@@ -1307,30 +1423,42 @@ local function wakeup(widget)
     data.ignition,data.ignitionKind,data.ignitionRaw=ignitionReading(widget)
     if selectedSource(widget.powerSource) then data.voltage=positive(sample(widget.powerSource,"voltage"))
     else data.voltage=data.rx1 or data.rx2 end
+    if not validPoll(widget) then return end
     local flight=widget.flightSession and widget.flightSession.key==key and widget.flightSession.current
     for index=1,4 do
         local rpmSource=flight and flight.rpmSources[index] or widget["rpm"..index.."Source"]
         local tempSource=flight and flight.tempSources[index] or widget["temp"..index.."Source"]
         local rpm,temp=sample(rpmSource,"rpm"),temperatureReading(tempSource)
+        if not validPoll(widget) then return end
         if rpm and rpm<0 then rpm=nil end
         data["rpm"..index],data["temp"..index]=rpm,temp
-        if index<=widget.rpmCount then data["rpmName"..index]=DeckCore.metadata(widget,"RPM"..index,rpmSource,clock,"RPM "..index,"") end
-        if index<=widget.tempCount then data["tempName"..index]=DeckCore.metadata(widget,"Temp"..index,tempSource,clock,"TEMP "..index,"") end
+        if index<=widget.rpmCount then
+            data["rpmName"..index]=DeckCore.metadata(widget,"RPM"..index,rpmSource,clock,"RPM "..index,"")
+            if not validPoll(widget) then return end
+        end
+        if index<=widget.tempCount then
+            data["tempName"..index]=DeckCore.metadata(widget,"Temp"..index,tempSource,clock,"TEMP "..index,"")
+            if not validPoll(widget) then return end
+        end
         if not widget.preview and rpm then widget.peakRPM[index]=math.max(widget.peakRPM[index] or 0,rpm) end
         if not widget.preview and temp then widget.peakTemp[index]=math.max(widget.peakTemp[index] or temp,temp) end
     end
     for channel=1,3 do
         local source=widget["rssi"..channel.."Source"]
         data["rssi"..channel]=sample(source,"signal")
+        if not validPoll(widget) then return end
         if channel<=widget.rfCount then
             data["rssi"..channel.."Name"],data["rssi"..channel.."Unit"]=DeckCore.metadata(widget,"RF"..channel,source,clock,"RF"..channel,"",true)
+            if not validPoll(widget) then return end
         end
         local graphSource
         if flight then graphSource=flight["source"..channel]
         else graphSource=selectedSource(widget["graph"..channel.."Source"]) or selectedSource(source) end
         data["graph"..channel]=sample(graphSource,"signal")
+        if not validPoll(widget) then return end
     end
     if not widget.preview then updateFuel(widget,data,clock,key) end
+    if not validPoll(widget) then return end
     if widget.preview then
         data.rx1,data.rx2,data.rx1Percent,data.rx2Percent=7.8,6.5,78,66
         data.rx1Estimated,data.rx2Estimated=false,false
@@ -1342,6 +1470,7 @@ local function wakeup(widget)
         for channel=1,3 do data["rssi"..channel]=data["rssi"..channel.."Unit"]=="%" and 98 or 81 end
     end
     updateFlight(widget,data,clock,key)
+    if not validPoll(widget) then return end
     updateAutoLog(widget,data,clock,key)
     if widget.timerMode==1 and widget.logEnabled and not widget.preview then
         local session=widget.flightSession
@@ -1700,11 +1829,12 @@ local function paint(widget)
     text(24*sx,299*sy,footer,520*sx,12*sy,colors.secondary,LEFT,nil,true)
 end
 
-local function numberField(widget,label,key,low,high,suffix,step)
+local function numberField(widget,label,key,low,high,suffix,step,onChanged)
+    local generation=widget.configGeneration
     local definition=SETTING_MAP[key]
     if definition and definition[3] then low,high=definition[3],definition[4] end
     local line=form.addLine(label,widget.configPanel)
-    local field=form.addNumberField(line,nil,low,high,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=value
+    local field=form.addNumberField(line,nil,low,high,function() return widget[key] end,function(value) if not validWidget(widget) or widget.configGeneration~=generation then return end; widget[key]=value
         if key=="signalMinimum" then widget.signalMaximum=math.max(value+1,widget.signalMaximum) end
         if key=="signalMaximum" then widget.signalMinimum=math.min(value-1,widget.signalMinimum) end
         if key=="throttleMinimum" then widget.throttleMaximum=math.max(value+1,widget.throttleMaximum) end
@@ -1726,36 +1856,75 @@ local function numberField(widget,label,key,low,high,suffix,step)
             end
         end
         changed(widget,true)
+        if onChanged and validWidget(widget) and widget.configGeneration==generation then onChanged() end
     end)
     if suffix then field:suffix(suffix) end
     if step then field:step(step) end
+    return field
 end
-local function choiceField(widget,label,key,choices)
+local function choiceField(widget,label,key,choices,onChanged)
+    local generation=widget.configGeneration
     local line=form.addLine(label,widget.configPanel)
-    form.addChoiceField(line,nil,choices,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=value;changed(widget,true) end)
+    return form.addChoiceField(line,nil,choices,function() return widget[key] end,function(value)
+        if not validWidget(widget) or widget.configGeneration~=generation then return end
+        widget[key]=value;changed(widget,true)
+        if onChanged and validWidget(widget) and widget.configGeneration==generation then onChanged() end
+    end)
 end
 local function colorField(widget,label,key)
+    local generation=widget.configGeneration
     local line=form.addLine(label,widget.configPanel)
-    form.addColorField(line,nil,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=value;changed(widget) end)
+    form.addColorField(line,nil,function() return widget[key] end,function(value) if not validWidget(widget) or widget.configGeneration~=generation then return end; widget[key]=value;changed(widget) end)
 end
-local function showProblem(message)
+showProblem=function(message)
     form.openDialog({title="GasDeck",message=message,buttons={{label="OK",action=function() return true end}}})
 end
-local function askAction(widget,action,title,message)
+local function askAction(widget,action,title,message,guard)
     if not validWidget(widget) then return end
-    local safe,problem=safeGroundAction(widget)
+    local safe,problem=(guard or safeGroundAction)(widget)
+    if not validWidget(widget) then return end
     if not safe then showProblem(problem);return end
     local key=modelKey()
+    if not validWidget(widget) then return end
     form.openDialog({title=title,message=message,buttons={{label="Cancel",action=function() return true end},
         {label="Confirm",action=function()
-            if not validWidget(widget) or modelKey()~=key then return true end
+            if not validWidget(widget) then return true end
+            local currentKey=modelKey()
+            if not validWidget(widget) or currentKey~=key then return true end
             local ok,reason=action(widget)
-            if not ok then print("GasDeck: "..tostring(reason));return false end
+            if not ok then
+                -- Close this dialog before showing the reason on the next
+                -- wakeup: opening a nested dialog inside Confirm is unreliable.
+                if validWidget(widget) and modelKey()==key then
+                    if validWidget(widget) then
+                        widget.actionProblem={key=key,message=reason or "Action could not be completed."}
+                    end
+                end
+                return true
+            end
             lcd.invalidate();return true
         end}}})
 end
 local function configure(widget)
     if not validWidget(widget) then return end
+    widget.configGeneration=(widget.configGeneration or 0)+1
+    local generation=widget.configGeneration
+    local bindings={}
+    -- ETHOS keeps source choices while disabled. Keep field handles local to
+    -- this form so an old picker callback cannot update a replacement form.
+    local function currentForm()
+        return validWidget(widget) and widget.configGeneration==generation
+    end
+    local function bind(field,active)
+        bindings[#bindings+1]={field=field,active=active}
+    end
+    local function refreshFields()
+        for _,binding in ipairs(bindings) do
+            if not currentForm() then return end
+            local field=binding.field
+            if field and type(field.enable)=="function" then field:enable(binding.active()) end
+        end
+    end
     cancelAutoLog(widget)
     widget.configPanel=nil
     form.addLine("GasDeck "..VERSION)
@@ -1769,17 +1938,22 @@ local function configure(widget)
     end
     local function boolean(label,key)
         local line=form.addLine(label,widget.configPanel)
-        form.addBooleanField(line,nil,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=value;cancelAutoLog(widget);changed(widget,true)
+        form.addBooleanField(line,nil,function() return widget[key] end,function(value) if not currentForm() then return end; widget[key]=value;cancelAutoLog(widget);changed(widget,true)
         end)
     end
-    local function sourceField(label,key)
+    local function sourceField(label,key,active)
         local line=form.addLine(label,widget.configPanel)
-        form.addSourceField(line,nil,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=selectedSource(value);changed(widget,true)
+        local field=form.addSourceField(line,nil,function() return widget[key] end,function(value)
+            if not currentForm() or (active and not active()) then return end
+            local source=selectedSource(value)
+            if not currentForm() or (active and not active()) then return end
+            widget[key]=source;changed(widget,true)
         end)
+        if active then bind(field,active) end
     end
     local function stringField(label,key,dirty)
         local line=form.addLine(label,widget.configPanel)
-        form.addTextField(line,nil,function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=(value or ""):sub(1,256)
+        form.addTextField(line,nil,function() return widget[key] end,function(value) if not currentForm() then return end; widget[key]=(value or ""):sub(1,256)
             if dirty then widget[dirty]=true end
             changed(widget,true)
         end)
@@ -1795,24 +1969,20 @@ local function configure(widget)
     choiceField(widget,"Image source","imageMode",{{"Selected model",1},{"Image file",2},{"Hidden",3}})
     local line=form.addLine("Image file",widget.configPanel)
     form.addFileField(line,nil,"/bitmaps/models","image+ext",function() return widget.imageName end,
-        function(value) if not validWidget(widget) then return end; widget.imageName=value or "";widget.imageDirty=true;changed(widget) end)
-    note("Reuses model image; native instruments need no art.")
-    note("PNG RGB/RGBA 8-bit; <=160k pixels; 290x191 ideal.")
+        function(value) if not currentForm() then return end; widget.imageName=value or "";widget.imageDirty=true;changed(widget) end)
     for index=1,2 do
         local prefix="rx"..index
         group("RX battery "..index)
         choiceField(widget,"Chemistry",prefix.."Chemistry",{{"LiPo",1},{"LiFe",2}})
         numberField(widget,"Cells",prefix.."Cells",1,8,nil,1)
-        numberField(widget,"Capacity",prefix.."Capacity",100,20000,"mAh",50)
-        choiceField(widget,"Remaining from",prefix.."Method",{{"Consumed mAh",1},{"Percent sensor",2},{"Voltage estimate",3}})
+        local function consumed() return widget[prefix.."Method"]==1 end
+        local function percent() return widget[prefix.."Method"]==2 end
+        bind(numberField(widget,"Capacity",prefix.."Capacity",100,20000,"mAh",50),consumed)
+        choiceField(widget,"Remaining from",prefix.."Method",{{"Consumed mAh",1},{"Percent sensor",2},{"Voltage estimate",3}},refreshFields)
+        -- Voltage remains useful for the live display and flight session.
         sourceField("Voltage source",prefix.."Source")
-        sourceField("Consumed mAh",prefix.."UsedSource")
-        sourceField("Percent source",prefix.."PercentSource")
-        sourceField("Current source",prefix.."CurrentSource")
-        note("Individual % needs individual consumption/sensor.")
-        note("Counter decrease: unknown until loss or confirmation.")
-        note("Do not assign combined mAh to both batteries.")
-        note("Voltage % is rough, especially on flat LiFe curve.")
+        sourceField("Consumed mAh",prefix.."UsedSource",consumed)
+        sourceField("Percent source",prefix.."PercentSource",percent)
     end
     group("RX / ignition")
     sourceField("RX total current","currentSource")
@@ -1820,39 +1990,36 @@ local function configure(widget)
     sourceField("Ignition status","ignitionSource")
     numberField(widget,"Ignition ON above","ignitionThreshold",-2048,2048,nil,1)
     sourceField("TX voltage","txSource")
-    note("Switch/command does not prove ignition is powered.")
-    note("A status sensor can report ignition; widget is read-only.")
     group("AES engine sensors")
-    numberField(widget,"RPM displays","rpmCount",0,4,nil,1)
-    numberField(widget,"Temp displays","tempCount",0,4,nil,1)
-    for index=1,4 do sourceField("RPM "..index.." source","rpm"..index.."Source") end
-    for index=1,4 do sourceField("Temp "..index.." source","temp"..index.."Source") end
+    numberField(widget,"RPM displays","rpmCount",0,4,nil,1,refreshFields)
+    numberField(widget,"Temp displays","tempCount",0,4,nil,1,refreshFields)
+    for index=1,4 do sourceField("RPM "..index.." source","rpm"..index.."Source",function() return index<=widget.rpmCount end) end
+    for index=1,4 do sourceField("Temp "..index.." source","temp"..index.."Source",function() return index<=widget.tempCount end) end
     choiceField(widget,"RPM style","meterStyle",{{"Numeric",1},{"Retro LCD",2}})
     numberField(widget,"RPM scale max","rpmMaximum",1000,100000,"rpm",500)
     numberField(widget,"RPM red zone","redZone",10,100,"%",1)
     choiceField(widget,"Temperature unit","tempUnit",{{"Celsius",1},{"Fahrenheit",2}})
     numberField(widget,"Temp warning","tempWarning",30,300,"C",1)
     numberField(widget,"Temp critical","tempCritical",31,350,"C",1)
-    note("Temperature limits are examples: set for your engine.")
-    note("AES II has 4 RPM / 7 temp inputs; display up to 4.")
     group("Fuel / flowmeter")
-    choiceField(widget,"Tank value from","fuelMethod",{{"Capacity - consumed",1},{"Integrate flow",2},{"Remaining volume",3},{"Remaining percent",4}})
+    local function consumedFuel() return widget.fuelMethod==1 end
+    local function remainingFuel() return widget.fuelMethod==3 or widget.fuelMethod==4 end
+    local function volumeFuel() return widget.fuelMethod==1 or widget.fuelMethod==3 end
+    local function integratedFuel() return widget.fuelMethod==2 end
+    choiceField(widget,"Tank value from","fuelMethod",{{"Capacity - consumed",1},{"Integrate flow",2},{"Remaining volume",3},{"Remaining percent",4}},refreshFields)
     numberField(widget,"Tank capacity","tankCapacity",10,20000,"ml",10)
     numberField(widget,"Refill amount","fuelLoaded",10,20000,"ml",10)
-    sourceField("Flow source","flowSource");sourceField("Fuel used source","fuelUsedSource")
-    sourceField("Remaining source","fuelRemainingSource")
+    -- Flow also drives the live flow display, independently of tank method.
+    sourceField("Flow source","flowSource");sourceField("Fuel used source","fuelUsedSource",consumedFuel)
+    sourceField("Remaining source","fuelRemainingSource",remainingFuel)
     choiceField(widget,"Flow input units","flowUnit",{{"Auto",1},{"ml/min",2},{"L/min",3},{"ml/s",4}})
-    choiceField(widget,"Volume input units","volumeUnit",{{"Auto",1},{"ml",2},{"L",3}})
-    numberField(widget,"Flow calibration","flowCorrection",10,300,"%",1)
+    bind(choiceField(widget,"Volume input units","volumeUnit",{{"Auto",1},{"ml",2},{"L",3}}),volumeFuel)
+    bind(numberField(widget,"Flow calibration","flowCorrection",10,300,"%",1),integratedFuel)
     numberField(widget,"Reserve / warning","fuelWarning",1,50,"%",1)
-    note("Auto accepts sensor ml, ml/m (ml/min), L or L/min.")
-    note("Flow integration needs Refuel after each radio restart.")
-    note("A >2s gap invalidates integration until refuelling.")
-    note("Consumption reset is not treated as a full tank.")
-    note("Calibration applies only to integrated flow.")
     line=form.addLine("Confirm refuel",widget.configPanel)
     form.addButton(line,nil,{text="Refuel...",press=function()
-        askAction(widget,refuel,"Confirm fuel loaded?",tostring(widget.fuelLoaded).." ml. Ignition must be confirmed OFF.")
+        if not currentForm() then return end
+        askAction(widget,refuel,"Confirm fuel loaded?",tostring(widget.fuelLoaded).." ml. Use after filling the tank.",refuelAllowed)
     end})
     group("Alerts")
     boolean("Low fuel alert","fuelAlarm");boolean("Low RX alert","rxAlarm")
@@ -1863,32 +2030,27 @@ local function configure(widget)
         local label,key=definition[1],definition[2]
         line=form.addLine(label,widget.configPanel)
         local folder=normalizeAudioFolder(widget.audioFolder)
-        form.addFileField(line,nil,folder,"audio+ext",function() return widget[key] end,function(value) if not validWidget(widget) then return end; widget[key]=audioPath(folder,value);changed(widget,true)
+        form.addFileField(line,nil,folder,"audio+ext",function() return widget[key] end,function(value) if not currentForm() then return end; widget[key]=audioPath(folder,value);changed(widget,true)
         end)
     end
-    note("PCM WAV: 32kHz, mono, 16-bit; invalid file uses tone.")
-    note("RX alarm <=30%; fuel uses configured reserve %.")
     group("RF sources / limits")
-    numberField(widget,"RF displays","rfCount",1,3,nil,1)
+    numberField(widget,"RF displays","rfCount",1,3,nil,1,refreshFields)
     numberField(widget,"RSSI scale min","signalMinimum",-150,199,"dB",1)
     numberField(widget,"RSSI scale max","signalMaximum",-149,200,"dB",1)
     for channel=1,3 do
         local prefix=channel==1 and "rf" or "rf"..channel
-        sourceField("RF "..channel.." source","rssi"..channel.."Source")
-        sourceField("Log RF "..channel.." source","graph"..channel.."Source")
+        local function visibleRF() return channel<=widget.rfCount end
+        sourceField("RF "..channel.." source","rssi"..channel.."Source",visibleRF)
+        sourceField("Log RF "..channel.." source","graph"..channel.."Source",visibleRF)
         choiceField(widget,"RF "..channel.." profile","rf"..channel.."Profile",{{"ACCESS / TD / TW",1},{"ACCST",2},{"Custom",3}})
         numberField(widget,"RF "..channel.." low RSSI",prefix.."WarnDB",-149,200,"dB",1)
         numberField(widget,"RF "..channel.." critical RSSI",prefix.."CriticalDB",-150,199,"dB",1)
         numberField(widget,"RF "..channel.." early VFR",prefix.."WarnPercent",1,100,"%",1)
         numberField(widget,"RF "..channel.." low VFR",prefix.."CriticalPercent",0,99,"%",1)
     end
-    note("3 antennas do not imply 3 independent RF sensors.")
-    note("Log source blank = dashboard source; names/units follow.")
-    note("VFR 95/50% are visual warnings, not radio alarms.")
     group("Flight session")
     boolean("Enable log","logEnabled")
     sourceField("Throttle source","throttleSource")
-    note("Ignition status is the only arm/flight gate.")
     sourceField("Airborne gate","airborneSource");sourceField("Power loss source","powerSource")
     numberField(widget,"Throttle low (raw)","throttleMinimum",-2048,2047,nil,1)
     numberField(widget,"Throttle high (raw)","throttleMaximum",-2047,2048,nil,1)
@@ -1900,18 +2062,14 @@ local function configure(widget)
     numberField(widget,"Extra log delay","autoLogDelay",0,120,"s",1)
     choiceField(widget,"Flight time from","timerMode",{{"GasDeck flight session",1},{"ETHOS timer",2}})
     sourceField("ETHOS timer","timerSource")
-    note("Default power = either valid RX1 or RX2 voltage.")
-    note("Ignition OFF pauses; one count per qualified session.")
-    note("Finish flight / Refuel requires valid ignition OFF.")
-    note("Last log stays until next flight qualifies.")
-    note("Long RF loss can resemble power loss; not a detector.")
-    note("Only count persists; last log/graphs stay in RAM.")
     line=form.addLine("Finish session",widget.configPanel)
     form.addButton(line,nil,{text="Finish flight...",press=function()
+        if not currentForm() then return end
         askAction(widget,finishFlight,"Finish flight?","Keep the last qualified flight log; Ignition must be OFF.")
     end})
     line=form.addLine("Reset flight count",widget.configPanel)
     form.addButton(line,nil,{text="Reset...",press=function()
+        if not currentForm() then return end
         askAction(widget,function(w)
             local safe,problem=safeGroundAction(w)
             if not safe then return false,problem end
@@ -1923,8 +2081,8 @@ local function configure(widget)
     end})
     group("Preview")
     boolean("Synthetic preview","preview")
-    note("Preview never counts flights or plays alerts.")
     widget.configPanel=nil
+    refreshFields()
 end
 local function destroy(widget)
     if not validWidget(widget) then return end
@@ -1960,7 +2118,7 @@ local function menu(widget)
             askAction(widget,finishFlight,"Finish flight?","Keep qualified log. Ignition must be OFF.") end},
         {"Refuel...",function()
             if not validWidget(widget) then return end
-            askAction(widget,refuel,"Confirm fuel loaded?",tostring(widget.fuelLoaded).." ml. Ignition must be OFF.") end},
+            askAction(widget,refuel,"Confirm fuel loaded?",tostring(widget.fuelLoaded).." ml. Use after filling the tank.",refuelAllowed) end},
         {"Reset live peaks",function()
             if not validWidget(widget) then return end
             widget.peakRPM,widget.peakTemp={},{};changed(widget) end},

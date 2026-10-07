@@ -1,260 +1,305 @@
 # GasDeck: illustrert konfigurasjonsguide
 
-[Startside](../README.md) | [English](Configuration.md) | [Installasjon og bruk](GasDeck.md)
+[Startside](../README.md) | [English](Configuration.md) | [Installasjon](GasDeck.md)
 
-**GasDeck er prøvd på fysisk X20RS med modell under ETHOS 26.1.2.**
+Denne gjennomgangen bruker TD SR18 med to RX-batterier og AES II med én RPM- og
+én temperaturvisning. Følg **Configure widget** fra toppen og ned.
+Sensornavn kan endres i ETHOS; velg kilden med riktig måling og enhet.
+Menybildene viser simulatorens felt uten tilkoblet TD SR18/AES II.
+Tabellene angir sensornavnene du skal velge på din radio.
+Visningseksemplene bruker eksempelverdier.
+Felt som ikke brukes av valgt metode er grå og inaktive.
+ETHOS' kildevelger kan også vise andre sensortyper; kontroller enheten før du velger.
 
-Visningseksemplene bruker eksempelverdier. Meny- og konfigurasjonsbildene viser
-widgeten i ETHOS.
-
-Åpne widgetmenyen for å velge **Flight log** eller **Flight diagnostics**.
-Rull ned og velg **Configure widget** for å endre innstillinger.
+Åpne widgetmenyen, rull ned og velg **Configure widget**.
 
 <table>
 <tr>
-<td><img src="images/gasdeck-widget-menu.png" alt="GasDecks widgetmeny, øvre valg"><br><b>Widgetmeny</b></td>
-<td><img src="images/gasdeck-widget-menu-more.png" alt="GasDecks widgetmeny, nedre valg"><br><b>Rull ned til Configure widget</b></td>
+<td><img src="images/gasdeck-widget-menu.png" alt="GasDecks widgetmeny"><br><b>Widgetmeny</b></td>
+<td><img src="images/gasdeck-widget-menu-more.png" alt="Configure widget nederst i menyen"><br><b>Configure widget</b></td>
 </tr>
 </table>
 
-## 1. Modell og utseende
+## 1. Model / appearance
 
-Åpne **Configure widget > Model / appearance**. Modellnavnet følger ETHOS-modellen.
-Visningseksemplene bruker **Engine brand = Great Power**, **Displacement = 38 cc**.
-Merke og kubikk vises under modellnavnet.
-
-| Felt | Valg og betydning |
-| --- | --- |
-| Engine brand / Displacement | Merke/kubikk, ikke motordatabase eller RPM-kalibrering. |
-| Engine count | 1-4; uavhengig av antall synlige RPM-/temperaturfelt. |
-| Background | Radio theme, Black eller Custom. |
-| Background color / Accent color | Egne farger; temamodus følger radioen. Normal gyllen aksent er ikke varsel. |
-| Font file | Valgfri ETHOS-støttet font; tomt felt bruker radioens innebygde fonter. |
-| Image source / Image file | Selected model, Image file eller Hidden. |
+Angi motorens **Engine brand**, **Displacement** og **Engine count**.
+For dette eksemplet med én motor velger du **Engine count = 1**.
+Behold **Image source = Selected model** for å bruke bildet til den aktive ETHOS-modellen.
+La **Font file** stå tomt for radioens innebygde fonter.
 
 ![Modellinnstillinger](images/gasdeck-config-model.png)
 
-Dette konfigurasjonsbildet viser standardvalgene: tomt motormerke, 60 cc, én motor
-og **Radio theme**.
+## 2. RX battery 1, deretter RX battery 2
 
-## 2. To separate mottakerbatterier
+Sett **Chemistry** og **Cells** riktig for hvert batteri.
 
-**RX battery 1** og **RX battery 2** har individuell kjemi, celler, kapasitet og kilder.
-Standard: LiPo, 2S, 2500 mAh, Consumed mAh.
+| Felt | RX battery 1 | RX battery 2 |
+| --- | --- | --- |
+| Remaining from | Voltage estimate | Voltage estimate |
+| Voltage source | RxBatt1 — V | RxBatt2 — V |
 
-| Felt | Betydning |
+Med denne metoden bestemmes gjenværende kapasitet fra spenning, batteritype og
+celletall. Estimatet merkes **EST** og er omtrentlig, særlig for LiFe.
+**Capacity**, **Consumed mAh** og **Percent source** er inaktive med denne metoden.
+Samlet **RxCurrent** velges i neste avsnitt.
+
+![RX battery 1 med Voltage estimate](images/gasdeck-setup-rx1.png)
+
+![RX battery 2 med Voltage estimate](images/gasdeck-setup-rx2.png)
+
+## 3. RX / ignition
+
+| Felt | Velg |
 | --- | --- |
-| Chemistry / Cells / Capacity | LiPo/LiFe, 1-8 celler, 100-20000 mAh; match faktisk pakke. |
-| Remaining from | Consumed mAh, Percent sensor eller eksplisitt Voltage estimate. |
-| Voltage source | Pakkespenning; regulert utgang er ikke egnet som pakkeestimat. |
-| Consumed mAh / Percent source | Individuelt brukt mAh eller gjenværende prosent. |
-| Current source | Valgfri individuell strøm; samlet RX-strøm velges separat. |
+| RX total current | RxCurrent — A |
+| RX total consumed | Egen kalkulert Consumption-sensor, for eksempel RxConsuption — mAh |
+| Ignition status | Tenningsbryteren, kanalen eller en faktisk statuskilde |
+| Ignition ON above | Vanligvis 0; kontroller at både ON og OFF vises riktig |
+| TX voltage | Radioens batterikilde, eller tomt felt for innebygd kilde |
 
-Gjenværende kapasitet beregnes fra valgt kapasitet og hver pakkes forbruk.
-2500 mAh og 550 mAh brukt gir 78 %. Kontroller forbrukssensoren etter lading
-og nullstill den ved behov.
-GasDeck kjenner ikke automatisk faktisk startladning og nullstiller ikke forbrukssensorene.
+**RxConsuption** er et navn på en sensor du oppretter, ikke en egen fabrikkmåling.
+Du kan kalle den **RxConsumption** eller velge et annet nyttig navn.
+Den viser samlet RX-forbruk og kan ikke fordele forbruket mellom batteriene.
 
-Uventet nullstilling av forbrukstelleren kan gjøre gjenværende kapasitet ukjent.
-Kontroller faktisk lading og mAh-avlesningen før du velger **Accept RX counters...**
-i widgetmenyen. Valget krever gyldig tenning **OFF** og **Synthetic preview** av.
-Trykk **Confirm** for å akseptere begge RX-avlesningene. Det nullstiller ikke
-sensorene, setter ikke ladingen til 100 % og endrer ikke flytelleren.
-Drivstoffpåfylling bekreftes separat med **Refuel**.
+### Hvis brukt mAh mangler
 
-Ikke bruk samme samlede forbruksteller for begge pakker; belastningen kan fordeles ulikt.
-Velg **RX total current / RX total consumed** under **RX / ignition** til midtfeltene.
+1. Åpne **Model > Telemetry**, oppdag **RxCurrent** og kontroller at den viser **A**.
+2. Velg **Create calculated sensor > Consumption**. Har Telemetry fanen **Sensors**,
+   åpner du først **+**-menyen.
+3. Sett **Source = RxCurrent**, **Unit = mAh**, passende **Range** og et nyttig navn.
+4. Slå på **Persistent** og la automatisk **Reset**-kilde stå tom.
+5. Etter fullading av begge pakkene telleren måler, bruker du **Reset** i den
+   kalkulerte sensorens redigeringsskjerm.
+6. Velg denne sensoren under **RX total consumed** i GasDeck.
 
-![Batteriinnstillinger](images/gasdeck-config-battery-sources.png)
+Ikke nullstill RX-forbruk ved tenningsendring eller RF-bortfall. Persistent beholder
+avlesningen ved radioomstart; den kan ikke gjenskape forbruk mens strømmålingen manglet.
+Se [ETHOS' Consumption-sensorer](https://ethos-doc.frsky-rc.com/model-setup/telemetry/#consumption-sensor).
 
-Grønn >40 %, gul <=40 %, oransje <=35 %, rød <=30 %. Ukjent gir nøytral tom måler
-og --%, aldri oppdiktet fullt batteri. Spenningsverdiene er nøytrale.
+![Kildefelter under RX / ignition](images/gasdeck-setup-rx-total.png)
 
-### LiFe og EST
+## 4. AES engine sensors
 
-Foretrekk individuelt brukt mAh eller målt prosent. Voltage estimate merkes **EST** og
-er grovt, særlig med LiFe og spenningsfall under belastning.
-**Alert RX estimate** er normalt av og må aktiveres bevisst.
+| Felt | Velg |
+| --- | --- |
+| RPM displays | 1 |
+| Temp displays | 1 |
+| RPM 1 source | AES RPM 1 — r/m (rpm), noen ganger kalt AESRPM1 |
+| Temp 1 source | AES temp. 5 — °C |
+| Temperature unit | Celsius, eventuelt Fahrenheit |
 
-![To LiFe-pakker](images/gasdeck-life-batteries.png)
+**Temp 1** er første visningsfelt og kan vise AES-temperaturinngang 5.
+Velg den tilkoblede sensoren som viser en rimelig temperatur.
+Tilpass **RPM scale max**, **RPM red zone**, **Temp warning** og **Temp critical**
+til motoren. Disse visningsgrensene styrer ikke motoren.
 
-## 3. Tenning og TX
+![Én RPM- og én temperaturvisning](images/gasdeck-setup-engine.png)
 
-Velg **Ignition status** som fysisk/logisk bryter, kanal eller faktisk statussensor.
-**Ignition ON above** er normalt 0; ON krever verdi større enn grensen.
-Kontroller begge stillinger med ekte data før flylogging.
+![Kildefelter for temperatur](images/gasdeck-setup-temperature.png)
 
-- ON: grønn; øvrige vilkår kan kvalifisere flyging.
-- OFF: rød; samme sesjon pauser.
-- Manglende/ugyldig: nøytral --; aldri bekreftet OFF.
+## 5. Fuel / flowmeter
 
-![Tenning OFF](images/gasdeck-ignition-off.png)
+| Felt | Velg eller angi |
+| --- | --- |
+| Tank value from | Integrate flow |
+| Tank capacity | Faktisk tankvolum i ml |
+| Refill amount | Drivstoff i tanken etter fylling; ved full tank brukes Tank capacity |
+| Flow source | AES flow — ml/min |
+| Flow input units | Auto når sensoren viser ml/min (ETHOS kan skrive ml/m) |
+| Flow calibration | 100 % til å begynne med; juster etter kontroll mot målt forbruk |
+| Reserve / warning | Ønsket reserve, for eksempel 20 % |
 
-![Manglende telemetri](images/gasdeck-telemetry-unavailable.png)
+Bruk **AES flow**, som er aktuell flow. **AES avg. flow** og **AES max flow** er
+andre målinger og skal ikke brukes til integrasjonen.
+**Fuel used source**, **Remaining source** og **Volume input units** er inaktive
+med **Integrate flow**.
 
-En bryter viser kommandoen, ikke at tenningen fysisk er på. GasDeck viser status
-og styrer ikke tenningen.
-**Refuel...**, **Finish flight...** og **Accept RX counters...** krever gyldig tenning OFF.
-**TX voltage** velger kilde eller tilgjengelig innebygd radio-batterikilde.
-
-## 4. RPM og temperaturer
-
-**AES engine sensors** setter **RPM displays** og **Temp displays** til 0-4 hver,
-uavhengig. Velg faktiske **RPM 1-4 source** og **Temp 1-4 source**. Flere felt skaper ikke sensorer.
-
-| Eksempel | RPM | Temperatur |
-| --- | --- | --- |
-| En motor / to målepunkter | 1 | 2 |
-| Flere sylindre/komponenter | 1 | 4 |
-| Fire motorer | 4 | 4 |
-| Tank/flow uten RPM | 0 | 0 |
-
-![En RPM og to temperaturer](images/gasdeck-single-engine.png)
-
-![Fire temperaturer](images/gasdeck-four-temperatures.png)
-
-![Fire motorer og tre RF-kilder](images/gasdeck-four-engines.png)
-
-**RPM style** er Numeric eller Retro LCD. **RPM scale max** er normalt 10000 rpm,
-**RPM red zone** 85 %. Visningsvalg er ikke turtallsbegrensning eller dokumentert trygt
-motorturtall. Pulser/poler må settes riktig i sensor/AES/ETHOS. Visningen bruker målt
-mekanisk RPM. MAX viser høyeste målte verdi.
-
-**Temperature unit** velger Celsius/Fahrenheit. **Temp warning / Temp critical**
-er normalt 150/180 grader Celsius, også med Fahrenheit-visning. Tilpass grensene
-til motoren og sensorplasseringen. Gul ved varsel, rød
-ved kritisk grense, ellers normal tekst.
-
-![Numerisk RPM](images/gasdeck-numeric-rpm.png)
-
-![Tank/flow uten RPM](images/gasdeck-fuel-only.png)
-
-## 5. Drivstoff og flowmeter
-
-Angi faktisk **Tank capacity** og **Refill amount**, normalt 500 ml hver.
-**Reserve / warning** er normalt 20 %, **Flow calibration** 100 %.
-
-| Tank value from | Kilder | Beregning |
-| --- | --- | --- |
-| Capacity - consumed | Fuel used source | Påfylt minus forbruk siden bekreftet fylling. |
-| Integrate flow | Flow source | Forbruk beregnet fra flow; Refuel kreves etter omstart. |
-| Remaining volume | Remaining source | Direkte gjenværende ml/liter. |
-| Remaining percent | Remaining source | Sensorprosent; tankkapasitet gir vist volum. |
-
-**Flow input units**: Auto, ml/min, L/min, ml/s. **Volume input units**: Auto, ml, L.
-ETHOS ml/m betyr ml/min. Auto følger sensorenheten; overstyr feilmerket kilde.
-Flow, totalforbruk og gjenværende er ulike verdier. Kalibrering gjelder bare integrert flow.
-
-![Drivstoffinnstillinger](images/gasdeck-config-fuel.png)
+![Innstillinger for Integrate flow](images/gasdeck-setup-fuel.png)
 
 ### Refuel og datagap
 
-Fyll tanken og sett **Refill amount** til påfylt mengde. Slå av preview og kontroller
-gyldig tenning OFF. Velg **Refuel...** og trykk **Confirm** for å oppdatere
-drivstoffestimatet og starte en ny flysesjon.
-Det fyller ikke tanken fysisk eller nullstiller andre sensorer. Forbruksmetoden
-regner fra forbruket ved bekreftet fylling. Bruk Refuel etter fylling, så beregningen
-starter fra riktig forbruk og tankmengde. Uventet tellernullstilling gjør estimatet ukjent.
+Fyll tanken, sett **Refill amount** og velg **Refuel... > Confirm** i widgetmenyen
+eller drivstoffinnstillingene. Slå av **Synthetic preview** først.
 
-Flowintegrasjon antar aldri full tank etter omstart. Bekreft faktisk fylling.
-Manglende flow kan gjøre estimatet ukjent frem til ny bekreftet fylling.
-Tapt forbruk kan ikke rekonstrueres. Direkte nivåsensor overstyres ikke av Refuel.
-Kontroller montering, luftbobler, drivstofftype, kalibrering og måleområde for utstyret.
+Bekreftelsen fungerer med en gang, også med avslått modell eller tenning ON.
+Er sensoren frakoblet, er bekreftelsen registrert selv om tankmåleren fortsatt er
+ukjent. Slå på modellen: estimatet vises når første gyldige flowavlesning kommer.
+Forbruk før denne avlesningen kan ikke gjenskapes.
 
-Tankens reservesegmenter er røde. Mengde/prosent blir rødt ved eller under valgt
-reserve; normalt brukes aksentfarge, ikke batteriterskler.
+Refuel sperres mens en telt flyging fortsatt pågår; dialogen forklarer årsaken.
+En pauset flyging avsluttes mens flytelleren og den kvalifiserte loggen beholdes.
+Etter at flowmålingen har startet, gjør et uobservert gap estimatet ukjent frem til
+ny bekreftet fylling. Bekreft faktisk fylling på nytt etter radio-/widgetomstart.
+Refuel nullstiller ikke AES eller andre telemetrisensorer.
 
-![Lavt drivstoff og RX-farger](images/gasdeck-low-fuel.png)
+## 6. Alerts
 
-## 6. Varsler
+Velg **Low fuel alert**, **Low RX alert** og ønsket **Repeat interval**.
+**Alert RX estimate** er normalt av; slå det på bevisst for dette oppsettet med
+spenningsestimat. Drivstoffvarsler følger **Reserve / warning**; RX-varsler bruker 30 %.
 
-**Low fuel alert / Low RX alert** er normalt på; **Alert RX estimate** av.
-Velg **Audio folder**, **Fuel WAV** og **RX battery WAV** individuelt.
-**Repeat interval**: normalt 15 s, valgbart 1-600 s. PCM WAV: 32 kHz, mono, 16-bit.
-Ugyldig/manglende fil gir tone. Fuel følger reserve, RX <=30 %.
-**Synthetic preview** spiller ikke varsler. Ingen lyd følger pakken.
+For talevarsler velger du **Audio folder**, **Fuel WAV** og **RX battery WAV**.
+Ingen lyder følger pakken. Manglende eller ugyldig fil gir tone.
 
-## 7. RF-kilder og grenser
+## 7. RF sources / limits
 
-Velg 1-3 **RF displays** og faktiske kilder. Navn følger ETHOS, f.eks. RSSI 2.4G
-eller VFR 900M; dB/% beholdes uten verdi. **Log RF 1-3 source** kan avvike fra
-hovedskjermen; tomt valg gjenbruker feltets kilde.
+| Felt | Eksempel |
+| --- | --- |
+| RF displays | 2 |
+| RF 1 source | RSSI 2.4G — dB |
+| RF 1 profile | ACCESS / TD / TW |
+| RF 2 source | RSSI 900M — dB |
+| RF 2 profile | ACCESS / TD / TW |
 
-| Profil | RSSI varsel/kritisk | VFR tidlig/lav |
+La **Log RF 1 source / Log RF 2 source** stå tomme for å tegne de valgte RSSI-kildene.
+Du kan i stedet velge **VFR 2.4G / VFR 900M** for å tegne gyldig rammerate i **%**.
+RSSI-signalstyrke og VFR-rammelevering er forskjellige målinger.
+
+![To RF-visninger med kildefelter](images/gasdeck-setup-rf.png)
+
+## 8. Flight session
+
+La **Enable log** stå Off hvis du bare ønsker instrumentvisningen.
+For flytelling slår du det på og velger **Throttle source**; tidligere valgt
+**Ignition status** er flygingens tenningsvilkår. Kontroller rå gassverdier i
+**Flight diagnostics** før du setter **Throttle low/high (raw)**.
+
+Standardkravene er 60 sekunder og minst 5 sekunder over 50 % normalisert gass.
+Velg **Airborne gate** bare hvis du har en egnet kilde.
+Tom **Power loss source** bruker én gyldig positiv RX-spenning.
+Tenning OFF pauser samme sesjon; ON fortsetter uten å telle to ganger.
+
+![Flysesjonsinnstillinger](images/gasdeck-setup-flight.png)
+
+## 9. Preview og sluttkontroll
+
+Behold **Synthetic preview** Off for reell telemetri.
+Med modellen på kontrollerer du begge batterispenningene, samlet RX-strøm/forbruk,
+RPM, temperatur, aktuell flow og RF-målinger. Bekreft Refuel etter fylling og
+kontroller at drivstoffmengden tilsvarer **Refill amount** når gyldig flow er tilgjengelig.
+
+## Avansert referanse
+
+### Batterimetoder og sensortype
+
+| Remaining from | Nødvendig måling | Bruk |
+| --- | --- | --- |
+| Voltage estimate | Pakkespenning i V; riktig batteritype/celletall | Omtrentlig kapasitet fra spenning, merket EST |
+| Consumed mAh | Individuelt brukt mAh; riktig Capacity | Gjenværende kapasitet fra pakkens forbruk |
+| Percent sensor | Individuell gjenværende kapasitet i % | Bruker oppgitt prosent |
+
+**Voltage source** viser fortsatt pakkespenning og brukes til strømbortfall i flyloggen.
+Navnet på kilden endrer ikke målingstype eller enhet.
+
+Ikke halver samlet **RxConsuption** eller bruk verdien som forbruk for begge batterier.
+Individuelt gjenværende fra brukt mAh forblir ukjent uten egen måling.
+GasDeck beregner ikke mAh fra strømfeltene eller summerer individuelle tellere.
+
+En kalkulert ETHOS **Percent**-sensor kan gi en normalisert **%**-kilde.
+Er den basert på spenning, er den fortsatt et spenningsestimat: kontroller mapping
+for tomt/fullt batteri og ikke behandle verdien som målt kapasitet. Endring av
+**Range** på en rå spenningssensor alene gjør ikke avlesningen i V til gyldig prosent.
+Se [ETHOS' Percent-sensorer](https://ethos-doc.frsky-rc.com/model-setup/telemetry/#percent-sensor).
+
+Ved uventet nullstilling av individuell forbruksteller: kontroller faktisk lading
+og mAh-avlesningene. Slå av preview, bekreft gyldig tenning OFF og velg
+**Accept RX counters... > Confirm**. Det aksepterer begge avlesningene uten å
+nullstille sensorene, sette kapasitet til 100 %, endre flytelleren eller fylle tanken.
+Manglende eller ugyldige målinger forblir ukjente.
+
+Batterifarger: grønn >40 %, gul ≤40 %, oransje ≤35 %, rød ≤30 %.
+Ukjent viser en nøytral tom måler med **--%**. Spenningsverdiene er nøytrale.
+
+### Andre drivstoffmetoder og enheter
+
+| Tank value from | Kilde/type | Innstillinger som brukes |
+| --- | --- | --- |
+| Capacity - consumed | Fuel used source — samlet brukt ml eller L | Tank capacity, Refill amount, Volume input units; bekreftet startverdi |
+| Integrate flow | Flow source — ml/min, L/min eller ml/s | Tank capacity, Refill amount, Flow input units, Flow calibration |
+| Remaining volume | Remaining source — sensorens gjenværende ml eller L | Tank capacity og Volume input units |
+| Remaining percent | Remaining source — sensorens gjenværende % | Tank capacity gjør prosent om til vist ml |
+
+**Flow source / Flow input units** brukes også til FLOW-visningen i de andre metodene.
+Flow, samlet forbruk og gjenværende volum er ulike sensortyper.
+Auto følger oppgitt enhet; velg riktig overstyring hvis kilden er feilmerket.
+**Flow calibration** påvirker bare integrert flow.
+
+Med **Capacity - consumed** registreres Refuel uten telemetri og venter på den
+første gyldige tellerverdien som nytt utgangspunkt. Tidligere forbruk kan ikke
+gjenskapes. Uventet nedgang i telleren gjør estimatet ukjent.
+
+**AES res. vol.** (ml) og **AES res. pect.** (%) kan velges for tilhørende metode
+først når tankkapasitet og fyllings-/nullstillingsfunksjon er konfigurert på
+AES-/ETHOS-siden. Kontroller avlesningene mot faktisk full tank før bruk.
+Refuel i GasDeck endrer ikke dette eksterne tankoppsettet eller nullstiller målingene.
+Bruk nullstillingsprosedyren som AES-fastvaren støtter.
+Se [FrSkys AES II-manual](https://www.flyingtech.co.uk/wp-content/uploads/2024/05/Advanced-Engine-Suite-II-Manual.pdf).
+
+Kontroller flowmeterets kalibrering, drivstofftype, montering, luftbobler og måleområde.
+Tankens reservesegmenter og gjenværende mengde ved/under reserve er røde;
+normalt brukes aksentfargen.
+
+### Visning, bilder og lydvalg
+
+RPM- og temperaturantall velges uavhengig, fra 0 til 4 hver. Flere visningsfelt
+oppretter ikke sensorer. RPM-kalibrering gjøres i sensoren/AES/ETHOS.
+MAX viser høyeste observerte verdi. Temperaturgrensene legges inn i °C,
+også når temperaturen vises i Fahrenheit.
+
+Bakgrunn kan være **Radio theme**, **Black** eller **Custom**.
+Gyllen aksent er normalfargen. Bruk et RGB/RGBA 8-bit PNG-modellbilde;
+store dimensjoner krever mer minne. Se [bilde- og fontoppsett](GasDeck.md#model-image-and-fonts).
+
+WAV-filer bør være PCM, 32 kHz, mono, 16-bit. Repeat interval er 1–600 sekunder;
+varsler venter til aktuell lyd er ferdig. Preview spiller ingen varsler.
+
+### RF-profiler
+
+| Profil | RSSI varsel / kritisk | VFR tidlig / lav |
 | --- | --- | --- |
 | ACCESS / TD / TW | 35 / 32 dB | 95 / 50 % |
 | ACCST | 45 / 42 dB | 95 / 50 % |
-| Custom | Egne dB-grenser per felt | Egne prosentgrenser per felt |
+| Custom | Egne dB-grenser | Egne %-grenser |
 
-**RSSI scale min/max** bestemmer visningsområde, normalt 0-100 dB, ikke radioalarmer.
-Normalt er aksentfarge, varsel gult, kritisk rødt og ukjent nøytralt.
-VFR viser gyldige rammer, RSSI signalstyrke. VFR kan vise kvalitetstap tydelig,
-mens RSSI er nyttig for margin. 95 % er widgetens tidlige visuelle merke, ikke universell
-produsentalarm. Behold radioens egne varsler og bruk dokumentasjonen for din mottaker.
+RSSI-skalaen er normalt 0–100 dB og styrer visningsområdet, ikke radioalarmen.
+Ukjente RF-verdier er nøytrale. Velg bare kilder mottakeren faktisk rapporterer;
+antenneantall bestemmer ikke antall målinger. Behold radioens egne varsler.
 
-![RF-innstillinger](images/gasdeck-config-rf.png)
+### Sesjonsslutt, diagnose og lagring
 
-TD SR18 har to 2,4 GHz-antenner og én 900 MHz-antenne, men ikke nødvendigvis tre RF-verdier.
-Firmware kan kombinere VFR. Ikke konstruer tredje kilde ut fra antall antenner.
+**Finish flight... > Confirm** krever preview Off og gyldig tenning OFF.
+Valget avslutter sesjonen, beholder siste kvalifiserte logg og gjør klar for en ny
+flyging uten å endre drivstoff eller flyteller. Bruk Refuel etter faktisk tankfylling.
 
-## 8. Flysesjon
+Power loss delay er normalt 10 sekunder (3–120). Ett manglende RX-batteri avslutter
+ikke sesjonen mens den andre spenningskilden er gyldig. Langt RF-bortfall kan ligne
+strømbortfall. Valgfri **Auto-open log** venter denne tiden pluss **Extra log delay**
+(normalt 5 sekunder); ny spenning eller manuelt visnings-/innstillingsbytte avbryter.
+Manuell Finish/Refuel åpner ikke loggen automatisk.
 
-Logging er normalt av. Velg **Throttle source** og **Ignition status**, uten separat ARM.
+Bare en kvalifisert flyging erstatter siste logg. Flytid teller kvalifiserende
+intervaller; RF-grafer inkluderer pauser. **Flight time from** kan bruke en ETHOS-timer.
+Benkkjøring kan kvalifisere; slå av logging under benkarbeid ved behov.
 
-| Felt | Standard og virkemåte |
-| --- | --- |
-| Flight minimum | 60 s samlet kvalifiserende tid; valgbart 60-3600 s. |
-| Throttle gate / High throttle time | >=50 % normalisert gass i >=5 s; valgbart. |
-| Throttle low/high (raw) | Endepunkter for valgt gasskilde, normalt -1024/+1024; kontroller mot diagnosen. Omvendte endepunkter støttes. |
-| Airborne gate | Valgfri; --- og Always on passerer. Ikke luftdetektor. |
-| Power loss source | Overstyring; ellers holder én gyldig positiv RX-spenning sesjonen i live. |
-| Power loss delay | 10 s sammenhengende bortfall; 3-120 s. |
-| Auto-open log / Extra log delay | Av / 5 s; åpner én gang etter kvalifisert sesjonsslutt ved bortfall. |
-| Flight time from / ETHOS timer | GasDecks kvalifiserende tid eller valgt ETHOS-timer. |
+**Flight diagnostics** viser gass, tenning, airborne-/strømvilkår og sperreårsak.
+**Reset live peaks** tømmer maksimumsverdier uten å endre telleren.
+**Reset flight count** gjelder modellen; avslutt sesjonen med gyldig OFF først.
+Widgeten viser tenningsstatus og styrer aldri tenning eller gass.
 
-![Flyinnstillinger](images/gasdeck-config-flight.png)
+Innstillinger og flyteller lagres per modell; detaljerte logger og grafer tømmes
+ved radioomstart. Ta sikkerhetskopi av SD-kort og modell sammen, og kontroller
+kildene hvis du kopierer en modell.
 
-OFF/ukjent pauser tid, men beholder statistikk/grafer. ON fortsetter uten ny telling.
-Ett manglende RX-batteri avslutter ikke dobbelmating. Langt RF-bortfall kan ligne strømbortfall.
-Med tilkoblede RX-pakker mellom turer: slå av preview, kontroller gyldig tenning OFF,
-velg **Finish flight...** og trykk **Confirm**. Det avslutter sesjonen og gjør klar
-for en ny tur uten å nullstille flytelleren eller endre drivstoffmengden.
-Bruk **Refuel...** når tanken faktisk er fylt.
-
-Siste kvalifiserte logg beholdes ved modellavslag og ny ukvalifisert kandidat.
-Den erstattes først av neste kvalifiserte tur. RF-grafer inkluderer pauser; flytid
-teller bare godkjente intervaller. Benktest kan fortsatt kvalifisere: filtre er ikke flybevis.
-
-Auto-open venter Power loss delay pluss Extra log delay. Ny spenning eller manuelt
-visnings-/innstillingsbytte avbryter. Sen aktivering åpner ikke eldre logger.
-Manuell Finish flight/Refuel åpner ikke loggen automatisk.
-
-![Siste flylogg](images/gasdeck-flight-log.png)
-
-## 9. Diagnose, meny og preview
-
-**Flight diagnostics** viser rå/normalisert gass, tenning, airborne gate, strøm og
-kvalifisering. Følg sperreårsaken; LOG DISABLED er ikke feil.
-**Reset live peaks** tømmer aktuelle topper, ikke telleren.
-**Reset flight count** gjelder modellen; avslutt aktiv sesjon med gyldig OFF først.
-
-![Diagnose](images/gasdeck-diagnostics.png)
-
-**Synthetic preview** viser oppdiktede verdier uten flytelling/varsler.
-Slå av for levende telemetri.
-
-## 10. Feilsøking
-
-Innstillinger og flyteller gjelder valgt modell. Loggstatistikk og grafer tømmes
-ved radioomstart. Ta sikkerhetskopi av modell og innstillinger før utskifting.
+### Feilsøking
 
 | Symptom | Kontroller |
 | --- | --- |
-| Widget mangler | scripts/GasDeck/main.lua, omstart og feilmeldinger under Info. |
-| Tom RX-måler | Individuell metode/kilde/kapasitet; Preview av. |
-| Ukjent fuel etter gap | Tapt flow kan ikke rekonstrueres; bekreft reell ny fylling. |
-| Ingen flytelling | Logging, tenning, normalisert gass, strøm/tid; diagnose. |
-| OFF skaper ikke ny flyging | Med hensikt; Finish flight / Refuel mellom turer. |
-| Bilde mangler | Modellsti, RGB/RGBA 8-bit PNG og størrelse; Suite Image Manager. |
+| Widget mangler | scripts/GasDeck/main.lua, omstart og Lua-feil under Info |
+| Tom RX-måler | Valgt metode/kilde, batteritype/celletall eller Capacity, preview Off |
+| Ukjent fuel etter Refuel uten telemetri | Bekreftelsen er registrert; slå på modellen og vent på gyldig valgt drivstoffmåling |
+| Ukjent fuel etter flowgap | Tapt forbruk kan ikke gjenskapes; bekreft faktisk ny fylling |
+| Ingen flytelling | Enable log, tenning, gassverdier og kvalifiseringskrav; diagnose |
+| Tenning OFF starter ikke ny flyging | Finish flight eller Refuel mellom turer |
+| Bilde mangler | Modellsti, RGB/RGBA 8-bit PNG og passende størrelse; Suite Image Manager |
 
-[Installasjon og bruk](GasDeck.md) | [Startside](../README.md)
+[Installasjon](GasDeck.md) | [Startside](../README.md)

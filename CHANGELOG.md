@@ -1,5 +1,15 @@
 # GasDeck change log
 
+## 2026.10-v3 - release, 2026-10-07
+
+- Confirm Refuel with the model switched off or ignition ON; explain when an active counted flight blocks it.
+- Register offline Refuel and wait for a valid fuel reading before showing the estimate.
+- Grey out unused configuration fields and simplify the radio settings.
+- Add an illustrated TD SR18/AES II walkthrough, including a calculated RX Consumption sensor recipe.
+- Fix an intermittent source-name error and a false unknown-capacity reading after switching consumption sensors.
+- Handle source and audio updates reliably when closing the widget or changing its settings.
+- Regression and native simulator checks passed on ETHOS 1.6.6 and 26.1.2; physical-radio testing of the final candidate passed.
+
 ## 2026.10-v2 - release, 2026-10-06
 
 - Add ETHOS 1.6.6 compatibility.

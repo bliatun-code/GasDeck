@@ -4,7 +4,7 @@
 
 ## Installation
 
-1. Download [GasDeck-2026.10-v2.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v2/GasDeck-2026.10-v2.zip) from the release assets.
+1. Download [GasDeck-2026.10-v3.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v3/GasDeck-2026.10-v3.zip) from the release assets.
 2. Extract `scripts/GasDeck` onto the radio SD card so the final path is `scripts/GasDeck/main.lua`.
 3. Remove any existing `scripts/GasDeck/main.luac`, then restart ETHOS.
 4. Select **GasDeck** in a full-screen widget area and configure your model's sources, capacities and fuel method.
@@ -12,33 +12,44 @@
 Logging and **Synthetic preview** default Off. Keep preview off when using live
 telemetry. Keep a backup of your model and widget settings when updating.
 
+For a TD SR18 with AES II, follow the illustrated setup in menu order:
+[English](Configuration.md) or [Norsk](Konfigurasjon-norsk.md).
+
 ## Hardware mapping
 
-Discover and configure sensors in ETHOS first, then select their sources in GasDeck.
+Discover sensors in ETHOS first. This example uses two RX voltage estimates,
+combined RX consumption, one RPM, one temperature and integrated fuel flow.
 
-| Data | GasDeck assignment |
+| Example source and unit | GasDeck assignment |
 | --- | --- |
-| RX1/RX2 voltage | Each battery's Voltage source. |
-| Individual mAh/percent | Its own Consumed mAh / Percent source. |
-| Combined RX current/consumption | RX total current / RX total consumed. |
-| RPM/temperatures | Independent RPM/Temp 1-4 slots. |
-| Flowmeter rate | Flow source and correct units. |
-| Cumulative fuel used | Fuel used source in Capacity - consumed mode. |
-| Actual remaining ml/percent | Remaining source and matching method. |
-| Ignition command/feedback | Ignition status; never inferred from RPM. |
-| RSSI/VFR | Actual dashboard and optional distinct log sources. |
+| RxBatt1 / RxBatt2 — V | Each RX battery's Voltage source; Remaining from = Voltage estimate |
+| RxCurrent — A | RX total current |
+| Calculated RxConsuption — mAh | RX total consumed |
+| AES RPM 1 — r/m | RPM 1 source |
+| AES temp. 5 — °C | Temp 1 source; first display slot can use AES input 5 |
+| AES flow — ml/min | Flow source; Tank value from = Integrate flow |
+| Ignition switch/channel/status | Ignition status; never inferred from RPM |
+| RSSI 2.4G / RSSI 900M — dB | RF 1 / RF 2 source |
+| VFR 2.4G / VFR 900M — % | Optional distinct Log RF 1 / Log RF 2 source |
 
-GasDeck displays up to four selected RPM and temperature readings. Consult your
-equipment's manual for wiring, sensor setup and calibration.
-[FrSky AES II manual](https://www.flyingtech.co.uk/wp-content/uploads/2024/05/Advanced-Engine-Suite-II-Manual.pdf),
-[FrSky North America AES II](https://frskyna.com/products/frsky-advanced-engine-suite).
+Sensor names are editable; the reading type and unit must match the field.
+Inactive configuration fields are grey. GasDeck can display up to four selected RPM
+and temperature readings; it does not create additional sensors.
 
-TD SR18's two 2.4 GHz antennas and one 900 MHz antenna do not establish three telemetry
-values; some firmware combines VFR.
-[FrSky TD SR18 manual](https://www.flyingtech.co.uk/wp-content/uploads/2023/10/TD-SR18-Manual.pdf),
-[FrSky TD R18](https://www.frsky-rc.com/td-r18/).
-[ETHOS telemetry documentation](https://ethos-doc.frsky-rc.com/model-setup/telemetry/)
-explains discovery and calculated sources.
+**RxConsuption** (or **RxConsumption**) is a user-created ETHOS **Consumption**
+sensor, not a factory measurement. Use **Source = RxCurrent**, **mAh** and
+**Persistent**, then reset manually after fully charging both packs it measures.
+Do not reset it on ignition changes or RF loss. Combined consumption cannot identify
+each pack's use; do not halve it or assign it to both batteries.
+Follow the [step-by-step recipe](Configuration.md#if-consumed-mah-is-missing).
+
+For other battery/fuel methods, see the [advanced reference](Configuration.md#advanced-reference).
+AES remaining-volume/percent sources need their own tank/reset setup; GasDeck Refuel
+does not change those external readings.
+Consult the [FrSky AES II manual](https://www.flyingtech.co.uk/wp-content/uploads/2024/05/Advanced-Engine-Suite-II-Manual.pdf)
+and [FrSky TD SR18 manual](https://www.frsky-rc.com/wp-content/uploads/Downloads/Amanual/TD%20SR18%20Manual.pdf)
+for hardware setup, and [ETHOS telemetry documentation](https://ethos-doc.frsky-rc.com/model-setup/telemetry/)
+for sensor discovery and calculated sources.
 
 ## Estimates and safety
 
@@ -68,9 +79,17 @@ Leave **Font file** blank to use the radio's native fonts.
 ## Flight logs and model settings
 
 Receiver batteries often stay connected between flights. With valid ignition OFF,
-use **Finish flight...** to end the current session, or **Refuel...** after actually
-adding fuel. Refuelling also completes the current flight. Ignition OFF by itself
-pauses the session; ignition ON resumes it without counting a second flight.
+use **Finish flight...** to end the current session. Ignition OFF by itself pauses
+the session; ignition ON resumes it without counting a second flight.
+
+After filling the tank, set **Refill amount**, exit **Synthetic preview** and choose
+**Refuel... > Confirm**. Refuel works with the model switched off or ignition ON.
+It is blocked while a counted flight is still running, with an explanation in the
+dialog. A paused flight is completed without changing its count. With the sensor
+offline, confirmation is registered while the tank meter stays unknown. The estimate
+appears when the model is switched on and the first valid fuel reading arrives;
+earlier consumption cannot be recovered. Direct remaining sensors are not changed.
+See [Refuel and data gaps](Configuration.md#refuel-and-data-gaps).
 
 The last qualified log stays visible after aircraft shutdown and while the next
 flight qualifies. Radio restart clears its statistics and graphs; the flight count
