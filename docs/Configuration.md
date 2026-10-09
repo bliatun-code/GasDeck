@@ -12,6 +12,9 @@ Fields that do not apply to the selected method are grey and inactive.
 ETHOS's source picker can show other sensor types too; check the unit before selecting.
 
 Open the widget menu, scroll down and choose **Configure widget**.
+After a page or model change, the first press may select the widget and the next
+opens its menu. The widget renews ETHOS focus while selected and visible.
+Short and long presses still use the radio's standard menus.
 
 <table>
 <tr>
@@ -20,14 +23,14 @@ Open the widget menu, scroll down and choose **Configure widget**.
 </tr>
 </table>
 
+![Configuration groups](images/gasdeck-config-model.png)
+
 ## 1. Model / appearance
 
 Enter your engine's **Engine brand**, **Displacement** and **Engine count**.
 For this single-engine example, use **Engine count = 1**.
 Keep **Image source = Selected model** to use the active ETHOS model's picture.
 Leave **Font file** blank for the radio's built-in fonts.
-
-![Model settings](images/gasdeck-config-model.png)
 
 ## 2. RX battery 1, then RX battery 2
 

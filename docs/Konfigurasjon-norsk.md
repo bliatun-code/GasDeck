@@ -12,6 +12,9 @@ Felt som ikke brukes av valgt metode er grå og inaktive.
 ETHOS' kildevelger kan også vise andre sensortyper; kontroller enheten før du velger.
 
 Åpne widgetmenyen, rull ned og velg **Configure widget**.
+Etter side- eller modellbytte kan første trykk velge widgeten og neste åpne
+menyen. Widgeten fornyer ETHOS-fokus mens den er valgt og synlig.
+Kort og langt trykk bruker fortsatt radioens vanlige menyer.
 
 <table>
 <tr>
@@ -20,14 +23,14 @@ ETHOS' kildevelger kan også vise andre sensortyper; kontroller enheten før du 
 </tr>
 </table>
 
+![Innstillingsgrupper](images/gasdeck-config-model.png)
+
 ## 1. Model / appearance
 
 Angi motorens **Engine brand**, **Displacement** og **Engine count**.
 For dette eksemplet med én motor velger du **Engine count = 1**.
 Behold **Image source = Selected model** for å bruke bildet til den aktive ETHOS-modellen.
 La **Font file** stå tomt for radioens innebygde fonter.
-
-![Modellinnstillinger](images/gasdeck-config-model.png)
 
 ## 2. RX battery 1, deretter RX battery 2
 

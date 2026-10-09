@@ -2,7 +2,7 @@
 -- Copyright (c) 2026 bliatun-code and Ethos Widgets contributors.
 -- GasDeck: receiver power, gasoline engines and fuel telemetry for ETHOS.
 -- Read-only instrumentation. This widget NEVER controls ignition or throttle.
-local VERSION = "2026.10-v3"
+local VERSION = "2026.10-v4"
 local MAX_IMAGE_PIXELS, BITMAP_RESERVE = 160000, 65536
 local FLIGHT_SESSION
 local HISTORY_POINTS, GRAPH_BINS = 180, 48
@@ -1392,6 +1392,11 @@ local function wakeup(widget)
         if key==problem.key then showProblem(problem.message) end
     end
     local clock=os.clock()
+    if widget.focusRepaintAt and clock >= widget.focusRepaintAt then
+        widget.focusRepaintAt = nil
+        lcd.invalidate()
+        if not validWidget(widget) then return end
+    end
     if clock<widget.nextPoll then return end
     widget.nextPoll=clock+0.25
     updateResources(widget)
@@ -1760,7 +1765,22 @@ local function paintDiagnostics(widget,colors,sx,sy)
     text(24*sx,436*sy,"Both RX feeds missing ends session; ignition OFF only pauses the session.",752*sx,16*sy,colors.secondary,LEFT,nil,true)
     text(24*sx,465*sy,"Bench filtering is not an airborne detector. Ignition indication never controls engine.",752*sx,12*sy,colors.accent,LEFT,nil,true)
 end
+local function keepFocus(widget)
+    -- Home focus expires in ETHOS. Refresh only the visible widget's existing
+    -- focus; leave native short/long presses and other pages to ETHOS.
+    widget.focusRepaintAt = nil
+    if type(lcd.hasFocus) == "function" and type(lcd.resetFocusTimeout) == "function" then
+        local ok, focused = pcall(lcd.hasFocus)
+        if ok and focused == true then
+            local renewed = pcall(lcd.resetFocusTimeout)
+            if renewed and validWidget(widget) then widget.focusRepaintAt = os.clock() + 4 end
+        end
+    end
+end
+
 local function paint(widget)
+    if not validWidget(widget) then return end
+    keepFocus(widget)
     if not validWidget(widget) then return end
     local width,height=lcd.getWindowSize()
     if not finite(width) or not finite(height) or width<=0 or height<=0 then return end
@@ -2091,6 +2111,7 @@ local function destroy(widget)
     widget.modelImage, widget.valueFont, widget.flightSession = nil, nil, nil
     widget.fuelState,widget.soundCache,widget.peakRPM,widget.peakTemp=nil,nil,nil,nil
     widget.metadata,widget.batteryStates,widget.alertStates=nil,nil,nil
+    widget.focusRepaintAt = nil
     widget.rfGraphs, widget.rfGraphWork = nil, nil
     if FLIGHT_SESSION and FLIGHT_SESSION.owner == widget then
         FLIGHT_SESSION.owner, FLIGHT_SESSION.lastClock = nil, nil

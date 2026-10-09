@@ -1,5 +1,9 @@
 # GasDeck change log
 
+## 2026.10-v4 - release, 2026-10-09
+
+- Renew ETHOS focus while the selected widget is visible, retaining the radio's standard menus.
+
 ## 2026.10-v3 - release, 2026-10-07
 
 - Confirm Refuel with the model switched off or ignition ON; explain when an active counted flight blocks it.

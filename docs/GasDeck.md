@@ -4,7 +4,7 @@
 
 ## Installation
 
-1. Download [GasDeck-2026.10-v3.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v3/GasDeck-2026.10-v3.zip) from the release assets.
+1. Download [GasDeck-2026.10-v4.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v4/GasDeck-2026.10-v4.zip) from the release assets.
 2. Extract `scripts/GasDeck` onto the radio SD card so the final path is `scripts/GasDeck/main.lua`.
 3. Remove any existing `scripts/GasDeck/main.luac`, then restart ETHOS.
 4. Select **GasDeck** in a full-screen widget area and configure your model's sources, capacities and fuel method.
