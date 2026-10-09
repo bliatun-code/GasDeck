@@ -41,8 +41,10 @@ Set **Chemistry** and **Cells** to match each actual battery.
 | Remaining from | Voltage estimate | Voltage estimate |
 | Voltage source | RxBatt1 — V | RxBatt2 — V |
 
-With this method, voltage, chemistry and cell count determine the remaining-charge
-estimate. It is marked **EST** and is approximate, especially with LiFe.
+This method estimates charge from voltage, chemistry and cell count; it is
+approximate, especially with LiFe. The corresponding RX battery menu shows
+**Remaining % is a voltage estimate.** The dashboard shows the percentage without
+an EST label.
 **Capacity**, **Consumed mAh** and **Percent source** are inactive for this method.
 The combined **RxCurrent** belongs in the next section.
 
@@ -187,7 +189,7 @@ that the fuel amount matches **Refill amount** when a valid flow reading is avai
 
 | Remaining from | Required value | How it is used |
 | --- | --- | --- |
-| Voltage estimate | Individual pack voltage in V; matching chemistry/cells | Approximate charge from voltage, marked EST |
+| Voltage estimate | Individual pack voltage in V; matching chemistry/cells | Approximate charge from voltage |
 | Consumed mAh | Individual pack consumption in mAh; matching Capacity | Remaining capacity from that pack's consumption |
 | Percent sensor | Individual remaining charge in % | Uses the supplied percentage |
 
@@ -200,7 +202,8 @@ GasDeck does not calculate mAh from its current fields or add individual counter
 
 An ETHOS calculated **Percent** sensor can provide a normalized **%** source.
 If it is derived from voltage, it is still a voltage estimate: verify its empty/full
-mapping for the battery and do not treat it as measured capacity. Editing a raw
+mapping for the battery and do not treat it as measured capacity. GasDeck cannot
+identify how a supplied % sensor was calculated. Editing a raw
 voltage source's **Range** alone does not turn its value in V into a valid % reading.
 See [ETHOS Percent sensors](https://ethos-doc.frsky-rc.com/model-setup/telemetry/#percent-sensor).
 

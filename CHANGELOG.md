@@ -1,5 +1,10 @@
 # GasDeck change log
 
+## 2026.10-v5 - release, 2026-10-09
+
+- Balance the ignition and flight-time header; enlarge RX battery icons and percentages, with chemistry and cell count shown in configuration.
+- Keep battery percentages clear; explain voltage estimates in the selected RX battery's configuration.
+
 ## 2026.10-v4 - release, 2026-10-09
 
 - Renew ETHOS focus while the selected widget is visible, retaining the radio's standard menus.

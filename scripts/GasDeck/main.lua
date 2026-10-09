@@ -2,7 +2,7 @@
 -- Copyright (c) 2026 bliatun-code and Ethos Widgets contributors.
 -- GasDeck: receiver power, gasoline engines and fuel telemetry for ETHOS.
 -- Read-only instrumentation. This widget NEVER controls ignition or throttle.
-local VERSION = "2026.10-v4"
+local VERSION = "2026.10-v5"
 local MAX_IMAGE_PIXELS, BITMAP_RESERVE = 160000, 65536
 local FLIGHT_SESSION
 local HISTORY_POINTS, GRAPH_BINS = 180, 48
@@ -1623,21 +1623,19 @@ local function smallBattery(widget,colors,index,sx,sy)
     local percent=data[prefix.."Percent"]
     local color=batteryColor(percent)
     text(cx,116*sy,"RX "..index,112*sx,18*sy,colors.secondary,CENTERED,nil,true)
-    local x,y,w,h=cx-29*sx,147*sy,58*sx,86*sy
-    rounded(cx-11*sx,y-8*sy,22*sx,6*sy,2*math.min(sx,sy),colors.border)
+    local x,y,w,h=cx-36*sx,143*sy,72*sx,100*sy
+    rounded(cx-13*sx,y-9*sy,26*sx,7*sy,2*math.min(sx,sy),colors.border)
     rounded(x,y,w,h,8*math.min(sx,sy),colors.border)
     rounded(x+2*sx,y+2*sy,w-4*sx,h-4*sy,6*math.min(sx,sy),colors.background)
     for segment=1,8 do
-        local row=y+h-8*sy-segment*8.6*sy
+        local row=y+h-9*sy-segment*10.2*sy
         local fill=percent and clamp(percent/12.5-segment+1,0,1) or 0
-        if fill<1 then rect(x+7*sx,row,w-14*sx,6*sy,colors.track) end
-        if fill>0 then rect(x+7*sx,row+6*sy*(1-fill),w-14*sx,6*sy*fill,color) end
+        if fill<1 then rect(x+8*sx,row,w-16*sx,7.5*sy,colors.track) end
+        if fill>0 then rect(x+8*sx,row+7.5*sy*(1-fill),w-16*sx,7.5*sy*fill,color) end
     end
-    text(cx,239*sy,valueText(data[prefix],2).." V",112*sx,26*sy,colors.foreground,CENTERED,widget.valueFont)
-    text(cx,269*sy,(data[prefix.."CounterReset"] and widget[prefix.."Method"]==1 and "CHECK mAh"
-        or valueText(percent,0).."%"..(data[prefix.."Estimated"] and " EST" or "")),112*sx,21*sy,color,CENTERED)
-    text(cx,294*sy,TYPES[widget[prefix.."Chemistry"]].name.." / "..widget[prefix.."Cells"].."S",112*sx,13*sy,
-        colors.secondary,CENTERED,nil,true)
+    text(cx,250*sy,valueText(data[prefix],2).." V",112*sx,26*sy,colors.foreground,CENTERED,widget.valueFont)
+    text(cx,280*sy,(data[prefix.."CounterReset"] and widget[prefix.."Method"]==1 and "CHECK mAh"
+        or valueText(percent,0).."%"),112*sx,28*sy,color,CENTERED)
 end
 local function drawRPM(widget,colors,index,x,width,sx,sy)
     local data=widget.data
@@ -1803,12 +1801,12 @@ local function paint(widget)
     local ignitionColor=data.ignition==nil and colors.border or data.ignition and COLORS.green or COLORS.red
     local ignitionFill=data.ignition==nil and COLORS.ignitionUnknown
         or data.ignition and COLORS.ignitionOn or COLORS.ignitionOff
-    rounded(525*sx,14*sy,94*sx,44*sy,7*math.min(sx,sy),ignitionColor)
-    rounded(526*sx,15*sy,92*sx,42*sy,6*math.min(sx,sy),ignitionFill)
-    lcd.color(ignitionColor);lcd.drawFilledCircle(round(534*sx),round(26*sy),3*math.min(sx,sy))
-    text(580*sx,19*sy,"IGNITION",70*sx,12*sy,COLORS.white,CENTERED,nil,true)
-    text(572*sx,34*sy,data.ignition==nil and "--" or data.ignition and "ON" or "OFF",82*sx,20*sy,ignitionColor,CENTERED)
-    text(776*sx,23*sy,timerText(data.timer),151*sx,46*sy,colors.foreground,RIGHT,widget.valueFont)
+    rounded(525*sx,15*sy,94*sx,34*sy,7*math.min(sx,sy),ignitionColor)
+    rounded(526*sx,16*sy,92*sx,32*sy,6*math.min(sx,sy),ignitionFill)
+    lcd.color(ignitionColor);lcd.drawFilledCircle(round(534*sx),round(24*sy),2*math.min(sx,sy))
+    text(580*sx,18*sy,"IGNITION",70*sx,12*sy,COLORS.white,CENTERED,nil,true)
+    text(572*sx,32*sy,data.ignition==nil and "--" or data.ignition and "ON" or "OFF",82*sx,15*sy,ignitionColor,CENTERED)
+    text(776*sx,17*sy,timerText(data.timer),151*sx,40*sy,colors.foreground,RIGHT,widget.valueFont)
     text(776*sx,78*sy,"FLIGHT TIME",151*sx,16*sy,colors.secondary,RIGHT,nil,true)
     text(572*sx,69*sy,"TX "..valueText(data.tx,1).." V",94*sx,26*sy,colors.foreground,CENTERED)
     rect(24*sx,103*sy,752*sx,1*sy,colors.border)
@@ -1942,7 +1940,9 @@ local function configure(widget)
         for _,binding in ipairs(bindings) do
             if not currentForm() then return end
             local field=binding.field
-            if field and type(field.enable)=="function" then field:enable(binding.active()) end
+            if binding.text then
+                if field and type(field.value)=="function" then field:value(binding.text()) end
+            elseif field and type(field.enable)=="function" then field:enable(binding.active()) end
         end
     end
     cancelAutoLog(widget)
@@ -1954,7 +1954,7 @@ local function configure(widget)
     local function note(message)
         local line=form.addLine("",widget.configPanel)
         local ok,width=pcall(form.width)
-        form.addStaticText(line,{x=10,y=0,w=ok and width-20 or 720,h=30},message)
+        return form.addStaticText(line,{x=10,y=0,w=ok and width-20 or 720,h=30},message)
     end
     local function boolean(label,key)
         local line=form.addLine(label,widget.configPanel)
@@ -1999,6 +1999,9 @@ local function configure(widget)
         local function percent() return widget[prefix.."Method"]==2 end
         bind(numberField(widget,"Capacity",prefix.."Capacity",100,20000,"mAh",50),consumed)
         choiceField(widget,"Remaining from",prefix.."Method",{{"Consumed mAh",1},{"Percent sensor",2},{"Voltage estimate",3}},refreshFields)
+        bindings[#bindings+1]={field=note(""),text=function()
+            return widget[prefix.."Method"]==3 and "Remaining % is a voltage estimate." or ""
+        end}
         -- Voltage remains useful for the live display and flight session.
         sourceField("Voltage source",prefix.."Source")
         sourceField("Consumed mAh",prefix.."UsedSource",consumed)

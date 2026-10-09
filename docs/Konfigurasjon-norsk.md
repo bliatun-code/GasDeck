@@ -41,8 +41,10 @@ Sett **Chemistry** og **Cells** riktig for hvert batteri.
 | Remaining from | Voltage estimate | Voltage estimate |
 | Voltage source | RxBatt1 — V | RxBatt2 — V |
 
-Med denne metoden bestemmes gjenværende kapasitet fra spenning, batteritype og
-celletall. Estimatet merkes **EST** og er omtrentlig, særlig for LiFe.
+Med denne metoden estimeres gjenværende kapasitet fra spenning, batteritype og
+celletall. Verdien er omtrentlig, særlig for LiFe. Menyen for det aktuelle RX-batteriet
+viser **Remaining % is a voltage estimate.** Hovedvisningen viser prosenten uten
+EST-merking.
 **Capacity**, **Consumed mAh** og **Percent source** er inaktive med denne metoden.
 Samlet **RxCurrent** velges i neste avsnitt.
 
@@ -187,7 +189,7 @@ kontroller at drivstoffmengden tilsvarer **Refill amount** når gyldig flow er t
 
 | Remaining from | Nødvendig måling | Bruk |
 | --- | --- | --- |
-| Voltage estimate | Pakkespenning i V; riktig batteritype/celletall | Omtrentlig kapasitet fra spenning, merket EST |
+| Voltage estimate | Pakkespenning i V; riktig batteritype/celletall | Omtrentlig kapasitet fra spenning |
 | Consumed mAh | Individuelt brukt mAh; riktig Capacity | Gjenværende kapasitet fra pakkens forbruk |
 | Percent sensor | Individuell gjenværende kapasitet i % | Bruker oppgitt prosent |
 
@@ -200,7 +202,8 @@ GasDeck beregner ikke mAh fra strømfeltene eller summerer individuelle tellere.
 
 En kalkulert ETHOS **Percent**-sensor kan gi en normalisert **%**-kilde.
 Er den basert på spenning, er den fortsatt et spenningsestimat: kontroller mapping
-for tomt/fullt batteri og ikke behandle verdien som målt kapasitet. Endring av
+for tomt/fullt batteri og ikke behandle verdien som målt kapasitet. GasDeck kan ikke
+se hvordan en valgt %-sensor er beregnet. Endring av
 **Range** på en rå spenningssensor alene gjør ikke avlesningen i V til gyldig prosent.
 Se [ETHOS' Percent-sensorer](https://ethos-doc.frsky-rc.com/model-setup/telemetry/#percent-sensor).
 

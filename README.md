@@ -2,9 +2,9 @@
 
 A full-screen receiver-power, gasoline-engine and fuel dashboard for FrSky ETHOS 1.6.6 and 26.1.2.
 
-**GasDeck 2026.10-v4: latest release. Physical radio testing passed.**
+**GasDeck 2026.10-v5: latest release. Physical radio testing passed.**
 
-[Download GasDeck-2026.10-v4.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v4/GasDeck-2026.10-v4.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v4)
+[Download GasDeck-2026.10-v5.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v5/GasDeck-2026.10-v5.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v5)
 
 ![GasDeck: RPM, temperatures, dual RX batteries and fuel](docs/images/gasdeck-single-engine.png)
 
@@ -38,7 +38,7 @@ The screenshots use illustrative values and example layouts.
 
 ## Install GasDeck
 
-1. Download [GasDeck-2026.10-v4.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v4/GasDeck-2026.10-v4.zip) from the release assets, not GitHub's automatic source archive.
+1. Download [GasDeck-2026.10-v5.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v5/GasDeck-2026.10-v5.zip) from the release assets, not GitHub's automatic source archive.
 2. Extract `scripts/GasDeck` onto the radio SD card; the final path is `scripts/GasDeck/main.lua`.
 3. Remove any existing `scripts/GasDeck/main.luac`, restart ETHOS and select **GasDeck** in a full-screen widget area.
 4. Follow the [TD SR18 / AES II walkthrough](docs/Configuration.md) or [norsk veiledning](docs/Konfigurasjon-norsk.md) to select sources in menu order. Turn **Synthetic preview** off for live operation.
