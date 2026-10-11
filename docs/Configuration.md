@@ -2,6 +2,11 @@
 
 [Home](../README.md) | [Norsk](Konfigurasjon-norsk.md) | [Installation](GasDeck.md)
 
+In **FrSky Suite > Lua library > Install Lua scripts**, select the release ZIP and
+click **Install scripts**. The same ZIP supports manual installation into `/scripts/GasDeck/`.
+Follow the [installation steps](GasDeck.md#installation), restart ETHOS and check
+the version at the top of **Configure widget**. Keep the configured widget and existing cfg/dat files when updating.
+
 This walkthrough uses a TD SR18 with two RX batteries and an AES II with one RPM
 and one temperature display. Follow **Configure widget** from top to bottom.
 Sensor names can be renamed in ETHOS; select the source with the correct reading
@@ -11,19 +16,17 @@ Dashboard examples use illustrative readings.
 Fields that do not apply to the selected method are grey and inactive.
 ETHOS's source picker can show other sensor types too; check the unit before selecting.
 
-Open the widget menu, scroll down and choose **Configure widget**.
+Open the widget menu and choose **Configure widget**.
 After a page or model change, the first press may select the widget and the next
-opens its menu. The widget renews ETHOS focus while selected and visible.
-Short and long presses still use the radio's standard menus.
+opens its menu. See [Home menu and navigation](#home-menu-and-navigation) for
+Diagnostics and RTN.
 
 <table>
 <tr>
 <td><img src="images/gasdeck-widget-menu.png" alt="GasDeck widget menu"><br><b>Widget menu</b></td>
-<td><img src="images/gasdeck-widget-menu-more.png" alt="Configure widget in the lower menu"><br><b>Configure widget</b></td>
+<td><img src="images/gasdeck-config-model.png" alt="GasDeck configuration groups"><br><b>Configure widget</b></td>
 </tr>
 </table>
-
-![Configuration groups](images/gasdeck-config-model.png)
 
 ## 1. Model / appearance
 
@@ -167,14 +170,23 @@ RSSI signal strength and VFR frame delivery are separate measurements.
 Leave **Enable log** Off if you only want the dashboard.
 To count flights, enable it and select **Throttle source**; the **Ignition status**
 selected earlier is the flight gate. Check raw throttle endpoints in
-**Flight diagnostics** before setting **Throttle low/high (raw)**.
+**Flight log > Diagnostics** before setting **Throttle low/high (raw)**.
 
 Default qualification needs 60 seconds and at least 5 seconds above 50% normalized
 throttle. Set **Airborne gate** only if you have a suitable source.
 Blank **Power loss source** uses either valid positive RX voltage.
-Ignition OFF pauses the same session; ON resumes it without counting twice.
+Valid ignition OFF ends the session and retains a qualified log. The next ON
+starts a new qualification; an unqualified start does not add a flight or replace
+the last log. Unknown ignition pauses the same session until valid readings return.
 
 ![Flight session settings](images/gasdeck-setup-flight.png)
+
+| Action, at the end of Flight session | Result |
+| --- | --- |
+| Reset live peaks > Reset... | Clears live RPM and temperature maxima, without changing the flight count or recorded log. |
+| Reset flight count > Reset... | Opens confirmation for this model's counter. Requires valid ignition OFF and an ended session. |
+
+![Peak and count reset controls](images/gasdeck-setup-flight-end.png)
 
 ## 9. Preview and final check
 
@@ -273,27 +285,60 @@ antenna count does not establish the number of readings. Keep native radio alert
 
 ### Flight completion, diagnostics and storage
 
-**Finish flight... > Confirm** requires preview Off and valid ignition OFF.
-It ends the session, retains the last qualified log and permits a new flight,
-without changing fuel or the count. Use Refuel after actually filling the tank.
+Valid ignition OFF ends the current session, even while receiver batteries stay
+connected. A qualified log is retained once; the next ignition ON starts a new
+qualification. Unknown ignition pauses rather than ends it. Use Refuel after
+actually filling the tank.
 
 Power loss delay defaults to 10 seconds (3–120). One missing RX feed does not finish
 the session while the other remains valid. Extended RF loss may resemble power loss.
-Optional **Auto-open log** waits that delay plus **Extra log delay** (default 5 seconds);
-returning power or manual view/settings changes cancel it. Manual Finish/Refuel does
-not open the log automatically.
+Optional **Auto-open log** opens a qualified log after **Extra log delay** (default
+5 seconds) following ignition OFF. If power loss ends the session instead, it waits
+**Power loss delay** plus that extra delay. Ignition ON, returning power after a
+power-loss completion or manual view/settings changes cancel it. Refuel does not
+open the log automatically.
 
 Only a qualified flight replaces the retained log. Flight time counts qualifying
 intervals; RF history includes pauses. **Flight time from** can select an ETHOS timer.
 Bench running can qualify; disable logging during bench work when appropriate.
 
-**Flight diagnostics** shows throttle, ignition, airborne/power gates and the blocking
-reason. **Reset live peaks** clears maxima without changing the count.
+**Flight log > Diagnostics** shows throttle, ignition, airborne/power gates and the blocking
+reason. **Configure widget > Flight session > Reset live peaks** clears maxima
+without changing the count or recorded log.
 **Reset flight count** is per model; finish the session with valid OFF first.
 The widget shows ignition status and never switches ignition or throttle.
 
 Settings and count are saved per model; detailed logs and graphs clear on radio restart.
 Back up the SD card and model together, and check sources if you copy a model.
+
+### Home menu and navigation
+
+The short-press **Home** menu contains five choices, all visible without scrolling:
+
+| Menu action | Result |
+| --- | --- |
+| Flight log / Dashboard | Switches between dashboard and flight log. |
+| Refuel... | Confirms the loaded fuel amount for a widget-managed estimate. |
+| Accept RX counters... | Reviews an unexpected consumption-counter reset; requires valid ignition OFF. |
+| Configure widget | Opens the setup groups above, including Reset live peaks in Flight session. |
+| Configure screens | Opens ETHOS's screen configuration. |
+
+Choose **Flight log**, then use **Diagnostics** at the bottom right. It is available
+even with no recorded flight. Turn the wheel right to select the button and
+short-press to open; turn left to clear its selection. Touch opens it directly.
+
+![Diagnostics button in an empty flight log](images/gasdeck-flight-log-empty.png)
+
+![Flight diagnostics and qualification status](images/gasdeck-diagnostics.png)
+
+With Flight log or Diagnostics selected, **RTN** returns to Dashboard. If a menu or
+dialog is open, close it with RTN first. Another RTN on Dashboard follows ETHOS's
+normal navigation and can deselect the widget. Long-press still opens ETHOS's
+Reset flight / Reset telemetry / Reset timers menu.
+
+While either Home menu is open, the background stays still for up to **30 seconds**.
+It updates when the menu closes or the limit expires. Telemetry, alerts and flight
+logging continue throughout.
 
 ### Troubleshooting
 
@@ -304,7 +349,7 @@ Back up the SD card and model together, and check sources if you copy a model.
 | Fuel unknown after offline Refuel | Confirmation is registered; switch on the model and wait for a valid selected fuel reading |
 | Unknown fuel after a flow gap | Missing consumption cannot be recovered; confirm an actual refill |
 | No counted flight | Enable log, ignition, throttle endpoints and qualification gates; diagnostics |
-| Ignition OFF does not start another flight | Finish flight or Refuel between sorties |
+| Ignition OFF does not complete the flight | Check that the selected ignition source reports valid OFF; unknown status only pauses |
 | No image | Model path, RGB/RGBA 8-bit PNG and suitable dimensions; Suite Image Manager |
 
 [Installation](GasDeck.md) | [Home](../README.md)

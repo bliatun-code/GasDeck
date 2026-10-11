@@ -1,5 +1,16 @@
 # GasDeck change log
 
+## 2026.10-v6 - release, 2026-10-11
+
+- Install and upgrade using a single ZIP through FrSky Suite Lua library or manual copying.
+- Show the installed version and release information in Suite.
+- Keep the background still while the Home menus are open, including during touch scrolling, with a 30-second limit. Telemetry, alerts and flight logging continue.
+- Keep five Home-menu choices; open Diagnostics from the bottom-right button in Flight log and return to Dashboard with RTN.
+- End the flight on valid ignition OFF, retain a qualified log and let the next ignition ON start a new qualification. Unknown ignition remains a pause.
+- Remove Finish flight and move Reset live peaks to Configure widget > Flight session.
+- Reduce drawing work and update the illustrated guides for the menus and installation.
+- Settings and flight-count formats are unchanged.
+
 ## 2026.10-v5 - release, 2026-10-09
 
 - Balance the ignition and flight-time header; enlarge RX battery icons and percentages, with chemistry and cell count shown in configuration.

@@ -4,13 +4,35 @@
 
 ## Installation
 
-1. Download [GasDeck-2026.10-v5.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v5/GasDeck-2026.10-v5.zip) from the release assets.
-2. Extract `scripts/GasDeck` onto the radio SD card so the final path is `scripts/GasDeck/main.lua`.
-3. Remove any existing `scripts/GasDeck/main.luac`, then restart ETHOS.
-4. Select **GasDeck** in a full-screen widget area and configure your model's sources, capacities and fuel method.
+Download [GasDeck-2026.10-v6.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v6/GasDeck-2026.10-v6.zip) from the release assets,
+not GitHub's automatic source archive. The same ZIP supports Suite and manual installation.
+
+- **FrSky Suite:** Connect the radio, open **Lua library**, choose **Install Lua scripts**, select the ZIP and click **Install scripts**. Suite installs the files into `/scripts/GasDeck/`.
+- **Manual:** Extract the ZIP, create `/scripts/GasDeck/` on the radio's script drive and copy all five extracted files into it:
+
+```text
+scripts/
+  GasDeck/
+    main.lua
+    ethos_lua_manifest.json
+    INSTALL.txt
+    LICENSE
+    NOTICE.md
+```
+
+Restart ETHOS after installation.
+On first installation, select **GasDeck** in a full-screen widget area and configure your model's sources,
+capacities and fuel method.
+Open **Configure widget** from the widget menu and check the version at the top.
+Suite displays this release as **26.10.6**.
+If Suite's installed entry has not refreshed, leave and reopen **Lua library**.
+
+If the widget still shows an older version after restarting, reconnect the radio,
+remove only `/scripts/GasDeck/main.luac` and restart ETHOS again.
 
 Logging and **Synthetic preview** default Off. Keep preview off when using live
-telemetry. Keep a backup of your model and widget settings when updating.
+telemetry. Back up your model before updating. Keep the configured widget and existing cfg/dat files;
+saved settings, source selections and flight counts are retained.
 
 For a TD SR18 with AES II, follow the illustrated setup in menu order:
 [English](Configuration.md) or [Norsk](Konfigurasjon-norsk.md).
@@ -81,8 +103,9 @@ Leave **Font file** blank to use the radio's native fonts.
 ## Flight logs and model settings
 
 Receiver batteries often stay connected between flights. With valid ignition OFF,
-use **Finish flight...** to end the current session. Ignition OFF by itself pauses
-the session; ignition ON resumes it without counting a second flight.
+GasDeck ends the current session and retains its qualified log. The next ignition
+ON starts a new qualification. Unknown ignition pauses the same session; an
+unqualified start does not count or replace the previous log.
 
 After filling the tank, set **Refill amount**, exit **Synthetic preview** and choose
 **Refuel... > Confirm**. Refuel works with the model switched off or ignition ON.
@@ -97,6 +120,14 @@ The last qualified log stays visible after aircraft shutdown and while the next
 flight qualifies. Radio restart clears its statistics and graphs; the flight count
 is saved for each model. Graphs retain brief signal drops and show gaps when readings
 are missing. Live traces can take a few seconds to update.
+
+Choose **Flight log** from the five-choice Home menu. **Diagnostics** is the button
+at the bottom right, also available with an empty log. Turn the wheel right to
+select it, then short-press, or touch it directly. **RTN** returns from the log or
+diagnostics to Dashboard; close any open menu first. Another RTN uses ETHOS's normal
+navigation. The background stays still while Home is open, for up to 30 seconds;
+telemetry, alerts and logging continue. **Reset live peaks** is under
+**Configure widget > Flight session**. See [Home menu and navigation](Configuration.md#home-menu-and-navigation).
 
 Settings and flight counts are saved separately for each model. Keep the model,
 widget settings and flight-counter files together in your backup when updating

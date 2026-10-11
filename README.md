@@ -2,9 +2,9 @@
 
 A full-screen receiver-power, gasoline-engine and fuel dashboard for FrSky ETHOS 1.6.6 and 26.1.2.
 
-**GasDeck 2026.10-v5: latest release. Physical radio testing passed.**
+**GasDeck 2026.10-v6: latest release. Physical radio testing passed.**
 
-[Download GasDeck-2026.10-v5.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v5/GasDeck-2026.10-v5.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v5)
+[Download GasDeck-2026.10-v6.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v6/GasDeck-2026.10-v6.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v6)
 
 ![GasDeck: RPM, temperatures, dual RX batteries and fuel](docs/images/gasdeck-single-engine.png)
 
@@ -38,13 +38,23 @@ The screenshots use illustrative values and example layouts.
 
 ## Install GasDeck
 
-1. Download [GasDeck-2026.10-v5.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v5/GasDeck-2026.10-v5.zip) from the release assets, not GitHub's automatic source archive.
-2. Extract `scripts/GasDeck` onto the radio SD card; the final path is `scripts/GasDeck/main.lua`.
-3. Remove any existing `scripts/GasDeck/main.luac`, restart ETHOS and select **GasDeck** in a full-screen widget area.
-4. Follow the [TD SR18 / AES II walkthrough](docs/Configuration.md) or [norsk veiledning](docs/Konfigurasjon-norsk.md) to select sources in menu order. Turn **Synthetic preview** off for live operation.
+Download [GasDeck-2026.10-v6.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v6/GasDeck-2026.10-v6.zip) from the release assets, not GitHub's automatic source archive. The same ZIP supports both methods:
 
-The ZIP includes installation instructions, license and notices. Keep a backup
-of your model and widget settings when updating.
+- **FrSky Suite:** Connect the radio, open **Lua library**, choose **Install Lua scripts**, select the ZIP and click **Install scripts**.
+- **Manual:** Extract the ZIP, create `/scripts/GasDeck/` on the radio's script drive and copy all extracted files into it. The final Lua path is `/scripts/GasDeck/main.lua`.
+
+Restart ETHOS after installation.
+On first installation, select **GasDeck** in a full-screen widget area. Follow the
+[TD SR18 / AES II walkthrough](docs/Configuration.md) or [norsk veiledning](docs/Konfigurasjon-norsk.md).
+Turn **Synthetic preview** off for live operation.
+Open **Configure widget** from the widget menu and check the version at the top.
+Suite displays this release as **26.10.6**.
+If Suite's installed entry has not refreshed, leave and reopen **Lua library**.
+If the widget still shows an older version after restarting, follow the
+[installation troubleshooting](docs/GasDeck.md#installation).
+
+Back up your model before updating. Keep the configured widget and existing cfg/dat files;
+saved settings, source selections and flight counts are retained.
 
 ## Ignition and sorties
 
@@ -55,15 +65,20 @@ the aircraft.
 ![Ignition OFF and TX voltage](docs/images/gasdeck-ignition-off.png)
 
 Enable logging, select throttle and ignition. Defaults: 60 s qualifying time including
-5 s above 50% normalized throttle. Ignition OFF/unknown pauses the same session;
-ON again does not count a second flight. Blank airborne gate is optional.
+5 s above 50% normalized throttle. Valid ignition OFF ends the session and retains
+its qualified log. The next ON starts a new qualification. Unknown ignition pauses
+the current session. Blank airborne gate is optional.
 
-Gasoline sorties often retain receiver batteries. Between sorties, use **Finish flight**
-with valid ignition OFF, or confirm an actual **Refuel**. Refuel also works with the
+Gasoline sorties can retain receiver batteries between flights. Confirm an actual
+**Refuel** after filling the tank. Refuel also works with the
 model off or ignition ON; a qualified active flight blocks it. Loss of both RX feeds for
 **Power loss delay** also ends the session; RF failure can resemble disconnected power.
 The last qualified log remains until a new flight qualifies. Only the counter survives
 radio restart; graphs/summary stay in RAM. Automatic log opening defaults Off.
+
+Open **Flight log** from the five-choice Home menu. Its bottom-right **Diagnostics**
+button shows the logging conditions, even with no recorded flight. **RTN** returns
+from either view to Dashboard. See the [menu walkthrough](docs/Configuration.md#home-menu-and-navigation).
 
 ## Safety and compatibility
 

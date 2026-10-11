@@ -2,6 +2,21 @@
 
 [Startside](../README.md) | [English](Configuration.md) | [Installasjon](GasDeck.md)
 
+Last ned den navngitte GasDeck-ZIP-pakken fra [release-siden](https://github.com/bliatun-code/GasDeck/releases/latest).
+Samme ZIP brukes til begge installasjonsmåtene:
+
+- **FrSky Suite:** Koble til radioen, åpne **Lua library**, velg **Install Lua scripts**, velg ZIP-filen og trykk **Install scripts**.
+- **Manuelt:** Pakk ut ZIP-filen, opprett `/scripts/GasDeck/` på radioens skriptdisk og kopier alle de fem utpakkede filene dit. Lua-filen skal ligge som `/scripts/GasDeck/main.lua`.
+
+Start ETHOS på nytt etter installasjonen. Ved første installasjon velger du
+**GasDeck** i et fullskjerms widgetfelt. Åpne **Configure widget** fra widgetmenyen
+og kontroller versjonen øverst. Suite viser denne versjonen som **26.10.6**.
+Hvis installasjonen ikke vises oppdatert i Suite, gå ut av og inn i **Lua library**.
+Viser widgeten fortsatt en eldre versjon etter omstart, koble til radioen igjen,
+fjern bare `/scripts/GasDeck/main.luac` og start ETHOS på nytt.
+Ta sikkerhetskopi av modellen før oppdatering. Behold widgeten som er satt opp og cfg/dat-filene;
+lagrede innstillinger, kildevalg og flytellere beholdes.
+
 Denne gjennomgangen bruker TD SR18 med to RX-batterier og AES II med én RPM- og
 én temperaturvisning. Følg **Configure widget** fra toppen og ned.
 Sensornavn kan endres i ETHOS; velg kilden med riktig måling og enhet.
@@ -11,19 +26,16 @@ Visningseksemplene bruker eksempelverdier.
 Felt som ikke brukes av valgt metode er grå og inaktive.
 ETHOS' kildevelger kan også vise andre sensortyper; kontroller enheten før du velger.
 
-Åpne widgetmenyen, rull ned og velg **Configure widget**.
+Åpne widgetmenyen og velg **Configure widget**.
 Etter side- eller modellbytte kan første trykk velge widgeten og neste åpne
-menyen. Widgeten fornyer ETHOS-fokus mens den er valgt og synlig.
-Kort og langt trykk bruker fortsatt radioens vanlige menyer.
+menyen. Se [Home-meny og navigasjon](#home-meny-og-navigasjon) for Diagnostics og RTN.
 
 <table>
 <tr>
 <td><img src="images/gasdeck-widget-menu.png" alt="GasDecks widgetmeny"><br><b>Widgetmeny</b></td>
-<td><img src="images/gasdeck-widget-menu-more.png" alt="Configure widget nederst i menyen"><br><b>Configure widget</b></td>
+<td><img src="images/gasdeck-config-model.png" alt="GasDecks innstillingsgrupper"><br><b>Configure widget</b></td>
 </tr>
 </table>
-
-![Innstillingsgrupper](images/gasdeck-config-model.png)
 
 ## 1. Model / appearance
 
@@ -167,14 +179,23 @@ RSSI-signalstyrke og VFR-rammelevering er forskjellige målinger.
 La **Enable log** stå Off hvis du bare ønsker instrumentvisningen.
 For flytelling slår du det på og velger **Throttle source**; tidligere valgt
 **Ignition status** er flygingens tenningsvilkår. Kontroller rå gassverdier i
-**Flight diagnostics** før du setter **Throttle low/high (raw)**.
+**Flight log > Diagnostics** før du setter **Throttle low/high (raw)**.
 
 Standardkravene er 60 sekunder og minst 5 sekunder over 50 % normalisert gass.
 Velg **Airborne gate** bare hvis du har en egnet kilde.
 Tom **Power loss source** bruker én gyldig positiv RX-spenning.
-Tenning OFF pauser samme sesjon; ON fortsetter uten å telle to ganger.
+Gyldig tenning OFF avslutter sesjonen og beholder en kvalifisert logg. Neste ON
+starter ny kvalifisering; en ukvalifisert start øker ikke telleren eller erstatter
+siste logg. Ukjent tenning pauser samme sesjon til gyldige avlesninger kommer tilbake.
 
 ![Flysesjonsinnstillinger](images/gasdeck-setup-flight.png)
+
+| Handling, nederst i Flight session | Resultat |
+| --- | --- |
+| Reset live peaks > Reset... | Tømmer aktuelle RPM- og temperaturmaksimum uten å endre flyteller eller registrert logg. |
+| Reset flight count > Reset... | Åpner bekreftelse for modellens flyteller. Krever gyldig tenning OFF og avsluttet sesjon. |
+
+![Kontroller for maksimumsverdier og flyteller](images/gasdeck-setup-flight-end.png)
 
 ## 9. Preview og sluttkontroll
 
@@ -273,28 +294,59 @@ antenneantall bestemmer ikke antall målinger. Behold radioens egne varsler.
 
 ### Sesjonsslutt, diagnose og lagring
 
-**Finish flight... > Confirm** krever preview Off og gyldig tenning OFF.
-Valget avslutter sesjonen, beholder siste kvalifiserte logg og gjør klar for en ny
-flyging uten å endre drivstoff eller flyteller. Bruk Refuel etter faktisk tankfylling.
+Gyldig tenning OFF avslutter sesjonen selv om mottakerbatteriene er tilkoblet.
+En kvalifisert logg beholdes én gang; neste ON starter ny kvalifisering.
+Ukjent tenning pauser i stedet for å avslutte. Bruk Refuel etter faktisk tankfylling.
 
 Power loss delay er normalt 10 sekunder (3–120). Ett manglende RX-batteri avslutter
 ikke sesjonen mens den andre spenningskilden er gyldig. Langt RF-bortfall kan ligne
-strømbortfall. Valgfri **Auto-open log** venter denne tiden pluss **Extra log delay**
-(normalt 5 sekunder); ny spenning eller manuelt visnings-/innstillingsbytte avbryter.
-Manuell Finish/Refuel åpner ikke loggen automatisk.
+strømbortfall. Valgfri **Auto-open log** åpner kvalifisert logg etter **Extra log delay**
+(normalt 5 sekunder) fra tenning OFF. Ved strømbortfall venter den **Power loss delay**
+pluss denne ekstratiden. Tenning ON, ny spenning etter strømbortfall eller manuelt
+visnings-/innstillingsbytte avbryter. Refuel åpner ikke loggen automatisk.
 
 Bare en kvalifisert flyging erstatter siste logg. Flytid teller kvalifiserende
 intervaller; RF-grafer inkluderer pauser. **Flight time from** kan bruke en ETHOS-timer.
 Benkkjøring kan kvalifisere; slå av logging under benkarbeid ved behov.
 
-**Flight diagnostics** viser gass, tenning, airborne-/strømvilkår og sperreårsak.
-**Reset live peaks** tømmer maksimumsverdier uten å endre telleren.
+**Flight log > Diagnostics** viser gass, tenning, airborne-/strømvilkår og sperreårsak.
+**Configure widget > Flight session > Reset live peaks** tømmer maksimumsverdier
+uten å endre telleren eller registrert logg.
 **Reset flight count** gjelder modellen; avslutt sesjonen med gyldig OFF først.
 Widgeten viser tenningsstatus og styrer aldri tenning eller gass.
 
 Innstillinger og flyteller lagres per modell; detaljerte logger og grafer tømmes
 ved radioomstart. Ta sikkerhetskopi av SD-kort og modell sammen, og kontroller
 kildene hvis du kopierer en modell.
+
+### Home-meny og navigasjon
+
+Home-menyen ved korttrykk har fem valg som vises uten scrolling:
+
+| Menyvalg | Resultat |
+| --- | --- |
+| Flight log / Dashboard | Bytter mellom hovedvisning og flylogg. |
+| Refuel... | Bekrefter fylt drivstoffmengde for et estimat som widgeten beregner. |
+| Accept RX counters... | Gjennomgår uventet reset av forbruksteller; krever gyldig tenning OFF. |
+| Configure widget | Åpner gruppene ovenfor, inkludert Reset live peaks i Flight session. |
+| Configure screens | Åpner ETHOS' skjermkonfigurasjon. |
+
+Velg **Flight log**, og bruk **Diagnostics** nederst til høyre. Knappen er tilgjengelig
+også uten registrert flyging. Rull hjulet til høyre for å velge knappen og korttrykk
+for å åpne; rull til venstre for å fjerne markeringen. Berøring åpner den direkte.
+
+![Diagnostics-knapp i en tom flylogg](images/gasdeck-flight-log-empty.png)
+
+![Flydiagnostikk og kvalifiseringsstatus](images/gasdeck-diagnostics.png)
+
+Når Flight log eller Diagnostics er valgt, går **RTN** til Dashboard. Er en meny eller
+dialog åpen, lukker første RTN den. Et ekstra RTN på Dashboard følger ETHOS' vanlige
+navigasjon og kan fjerne widgetens fokus. Langt trykk åpner fortsatt ETHOS-menyen
+Reset flight / Reset telemetry / Reset timers.
+
+Når en av Home-menyene er åpen, står bakgrunnen stille i opptil **30 sekunder**.
+Den oppdateres når menyen lukkes eller tiden er ute. Telemetri, varsler og flylogging
+fortsetter hele tiden.
 
 ### Feilsøking
 
@@ -305,7 +357,7 @@ kildene hvis du kopierer en modell.
 | Ukjent fuel etter Refuel uten telemetri | Bekreftelsen er registrert; slå på modellen og vent på gyldig valgt drivstoffmåling |
 | Ukjent fuel etter flowgap | Tapt forbruk kan ikke gjenskapes; bekreft faktisk ny fylling |
 | Ingen flytelling | Enable log, tenning, gassverdier og kvalifiseringskrav; diagnose |
-| Tenning OFF starter ikke ny flyging | Finish flight eller Refuel mellom turer |
+| Tenning OFF avslutter ikke flygingen | Kontroller at valgt tenningskilde gir gyldig OFF; ukjent status pauser bare |
 | Bilde mangler | Modellsti, RGB/RGBA 8-bit PNG og passende størrelse; Suite Image Manager |
 
 [Installasjon](GasDeck.md) | [Startside](../README.md)
