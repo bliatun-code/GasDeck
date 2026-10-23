@@ -95,3 +95,7 @@ terms described in [NOTICE](NOTICE.md).
 
 [VoltDeck](https://github.com/bliatun-code/VoltDeck) covers electric flight-pack
 capacity, power and electric-motor dashboards. The projects have independent releases.
+
+## Sailplanes and motor gliders
+
+[SoarDeck](https://github.com/bliatun-code/SoarDeck) provides altitude and vario instruments for sailplanes and motor gliders, with optional model pictures and a compact motor-battery display. See its [illustrated walkthrough](https://github.com/bliatun-code/SoarDeck/blob/main/docs/Walkthrough.md) for the available layouts and telemetry examples.
