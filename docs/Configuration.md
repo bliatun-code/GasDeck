@@ -1,5 +1,7 @@
 # GasDeck illustrated configuration guide
 
+[Display gallery: Deck and Digital with/without a picture, settings and telemetry sources](Display-gallery.md)
+
 [Home](../README.md) | [Norsk](Konfigurasjon-norsk.md) | [Installation](GasDeck.md)
 
 In **FrSky Suite > Lua library > Install Lua scripts**, select the release ZIP and
@@ -16,7 +18,7 @@ and one temperature display. Follow **Configure widget** from top to bottom.
 Sensor names can be renamed in ETHOS; select the source with the correct reading
 and unit. The menu images show the simulator's native fields without connected
 TD SR18/AES II hardware; the tables give the sensor names to select on your radio.
-Dashboard examples use illustrative readings.
+Dashboard examples use illustrative readings. The new [display gallery](Display-gallery.md) expands this to a 120 cc twin-cylinder engine (one RPM and two CHT probes) and a four-engine B-24 example. The basic one-probe setup here remains valid.
 Fields that do not apply to the selected method are grey and inactive.
 ETHOS's source picker can show other sensor types too; check the unit before selecting.
 
@@ -25,16 +27,23 @@ After a page or model change, the first press may select the widget and the next
 opens its menu. See [Home menu and navigation](#home-menu-and-navigation) for
 Diagnostics and RTN.
 
-Some menu images show the earlier menu arrangement. Use the field tables below for **Display style** and the current group order.
+The widget menu and Appearance pictures below show the current stable version. Older detailed source/alert pictures remain as field references; use the tables for the current group order and select your own discovered sensors.
 
 <table>
 <tr>
-<td><img src="images/gasdeck-widget-menu.png" alt="GasDeck widget menu"><br><b>Widget menu</b></td>
-<td><img src="images/gasdeck-config-model.png" alt="GasDeck configuration groups"><br><b>Configure widget</b></td>
+<td><img src="images/native-gasdeck-widget-menu.png" alt="GasDeck widget menu"><br><b>Widget menu</b></td>
+<td><img src="images/native-gasdeck-engine-count.png" alt="GasDeck Appearance"><br><b>Appearance</b></td>
 </tr>
 </table>
 
 ## 1. Appearance
+
+<table>
+<tr>
+<td><img src="images/native-gasdeck-style-choices.png" alt="Display style: Deck / Digital"><br><b>Display style</b></td>
+<td><img src="images/native-gasdeck-image-choices.png" alt="Image source: Selected model / Image file / Hidden"><br><b>Image source</b></td>
+</tr>
+</table>
 
 Choose **Display style = Deck** for the upright batteries and familiar instruments. **Digital** offers another instrument view focused on receiver power, RPM, temperatures and fuel, with **Instrument focus: Engine** shown as information. Deck is the default for new models and settings from versions before Digital. Previously saved Deck/Digital choices are retained.
 

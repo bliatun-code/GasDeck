@@ -1,5 +1,7 @@
 # GasDeck: illustrert konfigurasjonsguide
 
+[Visningsgalleri: Deck og Digital med/uten bilde, valg og telemetrikilder](Visningsgalleri-norsk.md)
+
 [Startside](../README.md) | [English](Configuration.md) | [Installasjon](GasDeck.md)
 
 Last ned den navngitte GasDeck-ZIP-pakken fra [release-siden](https://github.com/bliatun-code/GasDeck/releases/latest).
@@ -26,7 +28,7 @@ Denne gjennomgangen bruker TD SR18 med to RX-batterier og AES II med én RPM- og
 Sensornavn kan endres i ETHOS; velg kilden med riktig måling og enhet.
 Menybildene viser simulatorens felt uten tilkoblet TD SR18/AES II.
 Tabellene angir sensornavnene du skal velge på din radio.
-Visningseksemplene bruker eksempelverdier.
+Visningseksemplene bruker eksempelverdier. Det nye [visningsgalleriet](Visningsgalleri-norsk.md) utvider dette med en 120 cc tosylindret motor (én RPM og to CHT-prober) og et firemotors B-24-eksempel. Grunnoppsettet her med én probe er fortsatt gyldig.
 Felt som ikke brukes av valgt metode er grå og inaktive.
 ETHOS' kildevelger kan også vise andre sensortyper; kontroller enheten før du velger.
 
@@ -34,16 +36,23 @@ ETHOS' kildevelger kan også vise andre sensortyper; kontroller enheten før du 
 Etter side- eller modellbytte kan første trykk velge widgeten og neste åpne
 menyen. Se [Home-meny og navigasjon](#home-meny-og-navigasjon) for Diagnostics og RTN.
 
-Enkelte menybilder viser den tidligere menyrekkefølgen. Bruk felttabellene nedenfor for **Display style** og dagens grupperekkefølge.
+Widgetmenyen og Appearance-bildene nedenfor viser gjeldende stabile versjon. Eldre detaljbilder av kilder og varsler beholdes som feltreferanser; bruk tabellene for dagens grupperekkefølge og velg egne oppdagede sensorer.
 
 <table>
 <tr>
-<td><img src="images/gasdeck-widget-menu.png" alt="GasDecks widgetmeny"><br><b>Widgetmeny</b></td>
-<td><img src="images/gasdeck-config-model.png" alt="GasDecks innstillingsgrupper"><br><b>Configure widget</b></td>
+<td><img src="images/native-gasdeck-widget-menu.png" alt="GasDecks widgetmeny"><br><b>Widgetmeny</b></td>
+<td><img src="images/native-gasdeck-engine-count.png" alt="GasDeck Appearance"><br><b>Appearance</b></td>
 </tr>
 </table>
 
 ## 1. Appearance
+
+<table>
+<tr>
+<td><img src="images/native-gasdeck-style-choices.png" alt="Display style: Deck / Digital"><br><b>Display style</b></td>
+<td><img src="images/native-gasdeck-image-choices.png" alt="Image source: Selected model / Image file / Hidden"><br><b>Image source</b></td>
+</tr>
+</table>
 
 Velg **Display style = Deck** for de stående batteriene og den kjente instrumenteringen. **Digital** gir en alternativ instrumentvisning med **Instrument focus: Engine**. Fokuslinjen er informasjon om denne visningen. Deck er standard for nye modeller og innstillinger fra utgaver før Digital. Tidligere lagrede Deck/Digital-valg beholdes.
 

@@ -6,14 +6,27 @@ A full-screen receiver-power, gasoline-engine and fuel dashboard for FrSky ETHOS
 
 [Download GasDeck-2026.10-v7.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v7/GasDeck-2026.10-v7.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v7)
 
-![GasDeck: RPM, temperatures, dual RX batteries and fuel](docs/images/gasdeck-single-engine.png)
+<table>
+<tr>
+<td><img src="docs/images/native-gasdeck-deck-photo.png" alt="Deck / model picture" width="400"><br><b>Deck / model picture</b></td>
+<td><img src="docs/images/native-gasdeck-deck-hidden.png" alt="Deck / Hidden" width="400"><br><b>Deck / Hidden</b></td>
+</tr>
+<tr>
+<td><img src="docs/images/native-gasdeck-digital-photo.png" alt="Digital Engine / model picture" width="400"><br><b>Digital Engine / model picture</b></td>
+<td><img src="docs/images/native-gasdeck-digital-hidden.png" alt="Digital Engine / Hidden" width="400"><br><b>Digital Engine / Hidden</b></td>
+</tr>
+</table>
 
-The screenshots use illustrative values and example layouts.
+Genuine X20RS / ETHOS 26.1.2 simulator captures of the current stable version, with controlled illustrative telemetry. No physical sensors were connected.
 
+[Full display gallery and sensor setups](docs/Display-gallery.md) |
+[Norsk visningsgalleri](docs/Visningsgalleri-norsk.md) |
 [Illustrated configuration guide](docs/Configuration.md) |
 [Norsk veiledning](docs/Konfigurasjon-norsk.md) |
 [Installation and usage](docs/GasDeck.md) |
 [Lua source](scripts/GasDeck/main.lua)
+
+Large twin-cylinder acro: one 120 cc engine, one RPM source and two CHT probes. The four-engine example uses matching B-24 artwork. See the gallery for exact program choices, source roles and units.
 
 ## Display style and model picture
 
@@ -28,9 +41,9 @@ Changing style or image does not change calculation methods, telemetry sources, 
 ## Choose your engine deck
 
 <table>
-<tr><td><img src="docs/images/gasdeck-single-engine.png" alt="One RPM and two temperatures"><br><b>One engine</b><br>Retro LCD RPM, flow and tank reserve.</td><td><img src="docs/images/gasdeck-four-temperatures.png" alt="One RPM and four temperatures"><br><b>Four temperatures</b><br>Independently chosen measurement points.</td></tr>
-<tr><td><img src="docs/images/gasdeck-four-engines.png" alt="Four RPM, four temperatures and three RF slots"><br><b>Four engines</b><br>Up to four RPM and four temperatures.</td><td><img src="docs/images/gasdeck-numeric-rpm.png" alt="Numeric measured RPM"><br><b>Numeric RPM</b><br>Measured speed and session peak.</td></tr>
-<tr><td><img src="docs/images/gasdeck-flight-log.png" alt="Synthetic flight summary"><br><b>Flight summary</b><br>Peaks, fuel use and RF signal history.</td><td><img src="docs/images/gasdeck-low-fuel.png" alt="Fuel reserve and receiver battery colors"><br><b>Reserve and alerts</b><br>Fuel reserve and separate RX capacity.</td></tr>
+<tr><td><img src="docs/images/native-gasdeck-deck-photo.png" alt="One RPM and two temperatures"><br><b>One engine</b><br>Retro LCD RPM, flow and tank reserve.</td><td><img src="docs/images/native-gasdeck-deck-rpm1-temp4.png" alt="One RPM and four temperatures"><br><b>Four temperatures</b><br>Independently chosen measurement points.</td></tr>
+<tr><td><img src="docs/images/native-gasdeck-quad-deck-photo.png" alt="Four RPM, four temperatures and two RF slots"><br><b>Four engines</b><br>Up to four RPM and four temperatures.</td><td><img src="docs/images/native-gasdeck-numeric-deck.png" alt="Numeric measured RPM"><br><b>Numeric RPM</b><br>Measured speed and session peak.</td></tr>
+<tr><td><img src="docs/images/gasdeck-flight-log.png" alt="Illustrative flight summary"><br><b>Flight summary</b><br>Peaks, fuel use and RF signal history.</td><td><img src="docs/images/gasdeck-low-fuel.png" alt="Fuel reserve and receiver battery colors"><br><b>Reserve and alerts</b><br>Fuel reserve and separate RX capacity.</td></tr>
 </table>
 
 ## Highlights

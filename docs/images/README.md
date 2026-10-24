@@ -14,3 +14,7 @@ multi-temperature variants are hypothetical, not its installed hardware.
 The 320 x 180 aircraft PNG is optional documentation art; see [NOTICE](../../NOTICE.md).
 
 [English guide](../Configuration.md) | [Norsk](../Konfigurasjon-norsk.md)
+
+## Deck and Digital gallery
+
+Files beginning `native-` are current stable-app captures from the ETHOS 26.1.2 X20RS simulator at 800×480. Readings are controlled illustrative values. The [display gallery](../Display-gallery.md) and [norsk visningsgalleri](../Visningsgalleri-norsk.md) give the model, exact settings and required telemetry roles/units. Earlier session/acceptance walkthrough captures remain behavioral examples.

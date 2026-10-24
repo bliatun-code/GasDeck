@@ -1,5 +1,7 @@
 # GasDeck: installation and usage
 
+[Display gallery: Deck and Digital with/without a picture, settings and telemetry sources](Display-gallery.md)
+
 [Home](../README.md) | [Illustrated guide](Configuration.md) | [Norsk](Konfigurasjon-norsk.md)
 
 ## Installation
