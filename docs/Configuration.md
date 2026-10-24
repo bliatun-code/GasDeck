@@ -7,6 +7,10 @@ click **Install scripts**. The same ZIP supports manual installation into `/scri
 Follow the [installation steps](GasDeck.md#installation), restart ETHOS and check
 the version at the top of **Configure widget**. Keep the configured widget and existing cfg/dat files when updating.
 
+**Full screen:** The widget area must fill the radio's complete LCD, including on radios with a lower resolution. A split area shows **Full screen required**; choose a full-screen area to restore the instruments. **Screen size unavailable** means the LCD dimensions could not be read; the app retries automatically. Selected sources and settings are retained.
+
+See [upgrading and rollback](GasDeck.md#upgrading-and-rollback) before returning to an older release.
+
 This walkthrough uses a TD SR18 with two RX batteries and an AES II with one RPM
 and one temperature display. Follow **Configure widget** from top to bottom.
 Sensor names can be renamed in ETHOS; select the source with the correct reading
@@ -21,6 +25,8 @@ After a page or model change, the first press may select the widget and the next
 opens its menu. See [Home menu and navigation](#home-menu-and-navigation) for
 Diagnostics and RTN.
 
+Some menu images show the earlier menu arrangement. Use the field tables below for **Display style** and the current group order.
+
 <table>
 <tr>
 <td><img src="images/gasdeck-widget-menu.png" alt="GasDeck widget menu"><br><b>Widget menu</b></td>
@@ -28,7 +34,13 @@ Diagnostics and RTN.
 </tr>
 </table>
 
-## 1. Model / appearance
+## 1. Appearance
+
+Choose **Display style = Deck** for the upright batteries and familiar instruments. **Digital** offers another instrument view focused on receiver power, RPM, temperatures and fuel, with **Instrument focus: Engine** shown as information. Deck is the default for new models and settings from versions before Digital. Previously saved Deck/Digital choices are retained.
+
+**Image source** is independent in both styles: **Selected model**, **Image file** or **Hidden**. Hidden gives the picture area to larger readings. In Deck, a selected model picture keeps the familiar composition. A failed image keeps its area and shows the error; missing telemetry also retains instrument positions.
+
+Changing style or image does not change calculation methods, telemetry sources, units, alerts, acceptance or flight logging. Inactive fields retain their saved values.
 
 Enter your engine's **Engine brand**, **Displacement** and **Engine count**.
 For this single-engine example, use **Engine count = 1**.

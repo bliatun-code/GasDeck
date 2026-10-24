@@ -2,9 +2,9 @@
 
 A full-screen receiver-power, gasoline-engine and fuel dashboard for FrSky ETHOS 1.6.6 and 26.1.2.
 
-**GasDeck 2026.10-v6: latest release. Physical radio testing passed.**
+**GasDeck 2026.10-v7: latest release. Physical radio testing passed.**
 
-[Download GasDeck-2026.10-v6.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v6/GasDeck-2026.10-v6.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v6)
+[Download GasDeck-2026.10-v7.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v7/GasDeck-2026.10-v7.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v7)
 
 ![GasDeck: RPM, temperatures, dual RX batteries and fuel](docs/images/gasdeck-single-engine.png)
 
@@ -14,6 +14,16 @@ The screenshots use illustrative values and example layouts.
 [Norsk veiledning](docs/Konfigurasjon-norsk.md) |
 [Installation and usage](docs/GasDeck.md) |
 [Lua source](scripts/GasDeck/main.lua)
+
+## Display style and model picture
+
+Choose **Display style = Deck** for the upright batteries and familiar instruments. **Digital** offers another instrument view focused on receiver power, RPM, temperatures and fuel, with **Instrument focus: Engine** shown as information. Deck is the default for new models and settings from versions before Digital. Previously saved Deck/Digital choices are retained.
+
+**Image source** is independent in both styles: **Selected model**, **Image file** or **Hidden**. Hidden gives the picture area to larger readings. In Deck, a selected model picture keeps the familiar composition. A failed image keeps its area and shows the error; missing telemetry also retains instrument positions.
+
+Changing style or image does not change calculation methods, telemetry sources, units, alerts, acceptance or flight logging. Inactive fields retain their saved values.
+
+**Full screen:** The widget area must fill the radio's complete LCD, including on radios with a lower resolution. A split area shows **Full screen required**; choose a full-screen area to restore the instruments. **Screen size unavailable** means the LCD dimensions could not be read; the app retries automatically. Selected sources and settings are retained.
 
 ## Choose your engine deck
 
@@ -25,6 +35,7 @@ The screenshots use illustrative values and example layouts.
 
 ## Highlights
 
+- Deck and Digital display styles, with an independent model-picture choice.
 - Active model name and optional reuse of its selected model picture.
 - Receiver battery readings and transmitter voltage.
 - Two independently configured LiPo/LiFe RX batteries; individual mAh, percent or explicit voltage estimate.
@@ -38,7 +49,7 @@ The screenshots use illustrative values and example layouts.
 
 ## Install GasDeck
 
-Download [GasDeck-2026.10-v6.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v6/GasDeck-2026.10-v6.zip) from the release assets, not GitHub's automatic source archive. The same ZIP supports both methods:
+Download [GasDeck-2026.10-v7.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v7/GasDeck-2026.10-v7.zip) from the release assets, not GitHub's automatic source archive. The same ZIP supports both methods:
 
 - **FrSky Suite:** Connect the radio, open **Lua library**, choose **Install Lua scripts**, select the ZIP and click **Install scripts**.
 - **Manual:** Extract the ZIP, create `/scripts/GasDeck/` on the radio's script drive and copy all extracted files into it. The final Lua path is `/scripts/GasDeck/main.lua`.
@@ -48,13 +59,14 @@ On first installation, select **GasDeck** in a full-screen widget area. Follow t
 [TD SR18 / AES II walkthrough](docs/Configuration.md) or [norsk veiledning](docs/Konfigurasjon-norsk.md).
 Turn **Synthetic preview** off for live operation.
 Open **Configure widget** from the widget menu and check the version at the top.
-Suite displays this release as **26.10.6**.
+Suite displays this release as **26.10.7**.
 If Suite's installed entry has not refreshed, leave and reopen **Lua library**.
 If the widget still shows an older version after restarting, follow the
 [installation troubleshooting](docs/GasDeck.md#installation).
 
-Back up your model before updating. Keep the configured widget and existing cfg/dat files;
-saved settings, source selections and flight counts are retained.
+Back up the SD card and ETHOS model storage together before updating. Keep the configured
+widget and existing cfg/dat files; saved settings, sources and flight counts are retained.
+See [upgrading and rollback](docs/GasDeck.md#upgrading-and-rollback) before returning to an older release.
 
 ## Ignition and sorties
 

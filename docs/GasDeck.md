@@ -4,7 +4,7 @@
 
 ## Installation
 
-Download [GasDeck-2026.10-v6.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v6/GasDeck-2026.10-v6.zip) from the release assets,
+Download [GasDeck-2026.10-v7.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v7/GasDeck-2026.10-v7.zip) from the release assets,
 not GitHub's automatic source archive. The same ZIP supports Suite and manual installation.
 
 - **FrSky Suite:** Connect the radio, open **Lua library**, choose **Install Lua scripts**, select the ZIP and click **Install scripts**. Suite installs the files into `/scripts/GasDeck/`.
@@ -24,7 +24,7 @@ Restart ETHOS after installation.
 On first installation, select **GasDeck** in a full-screen widget area and configure your model's sources,
 capacities and fuel method.
 Open **Configure widget** from the widget menu and check the version at the top.
-Suite displays this release as **26.10.6**.
+Suite displays this release as **26.10.7**.
 If Suite's installed entry has not refreshed, leave and reopen **Lua library**.
 
 If the widget still shows an older version after restarting, reconnect the radio,
@@ -36,6 +36,22 @@ saved settings, source selections and flight counts are retained.
 
 For a TD SR18 with AES II, follow the illustrated setup in menu order:
 [English](Configuration.md) or [Norsk](Konfigurasjon-norsk.md).
+
+## Display style and model picture
+
+Choose **Display style = Deck** for the upright batteries and familiar instruments. **Digital** offers another instrument view focused on receiver power, RPM, temperatures and fuel, with **Instrument focus: Engine** shown as information. Deck is the default for new models and settings from versions before Digital. Previously saved Deck/Digital choices are retained.
+
+**Image source** is independent in both styles: **Selected model**, **Image file** or **Hidden**. Hidden gives the picture area to larger readings. In Deck, a selected model picture keeps the familiar composition. A failed image keeps its area and shows the error; missing telemetry also retains instrument positions.
+
+Changing style or image does not change calculation methods, telemetry sources, units, alerts, acceptance or flight logging. Inactive fields retain their saved values.
+
+**Full screen:** The widget area must fill the radio's complete LCD, including on radios with a lower resolution. A split area shows **Full screen required**; choose a full-screen area to restore the instruments. **Screen size unavailable** means the LCD dimensions could not be read; the app retries automatically. Selected sources and settings are retained.
+
+## Upgrading and rollback
+
+Before upgrading, make a complete backup of the SD card and ETHOS model storage, including every settings and flight-counter copy. Valid settings from versions before Digital open with **Deck** as the default. Previously saved Deck/Digital choices, source selections and counts are retained. Do not delete cfg/dat files to change display style.
+
+Saving settings in this release uses a newer format that 2026.10-v6 and earlier releases cannot read. Returning to those releases requires the coherent backup from before the upgrade, including model storage and all settings copies. Preserve the post-test state before restoring it. **Display style = Deck** only changes presentation; it does not downgrade the settings format.
 
 ## Hardware mapping
 

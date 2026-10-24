@@ -3,7 +3,7 @@
 -- GasDeck: receiver power, gasoline engines and fuel telemetry for ETHOS.
 -- Read-only instrumentation. This widget NEVER controls ignition or throttle.
 local RenderLCD = lcd
-local VERSION = "2026.10-v6"
+local VERSION = "2026.10-v7"
 local MAX_IMAGE_PIXELS, BITMAP_RESERVE = 160000, 65536
 local FLIGHT_SESSION
 local HISTORY_POINTS, GRAPH_BINS = 180, 48
@@ -94,6 +94,11 @@ local SETTING_DEFS = {
     {"rf3WarnPercent",95,1,100},
     {"rf3CriticalPercent",50,0,99},
 }
+-- GD2 is a strict positional scalar contract. Preserve its exact definitions;
+-- a new GD3 record adds presentation only and defaults every older model to Deck.
+local GD2_SETTING_DEFS = {}
+for index, definition in ipairs(SETTING_DEFS) do GD2_SETTING_DEFS[index] = definition end
+SETTING_DEFS[#SETTING_DEFS + 1] = {"displayStyle",1,1,2}
 local SETTING_MAP = {}
 for _, definition in ipairs(SETTING_DEFS) do SETTING_MAP[definition[1]] = definition end
 local SETTINGS = {}
@@ -781,8 +786,14 @@ end
 
 -- Separate namespaces: never read/write GasDeck model settings or counters.
 local function configRecord(key, bytes)
+    if type(bytes) == "string" and bytes:match("^GD2|") then
+        local record, problem = DeckCore.decodeSettings(key, bytes, CONFIG_LIMIT, digest, identityHex,
+            HEX_DECODE, "GD2", GD2_SETTING_DEFS)
+        if record then record.values.displayStyle = 1 end
+        return record, problem
+    end
     return DeckCore.decodeSettings(key, bytes, CONFIG_LIMIT, digest, identityHex, HEX_DECODE,
-        "GD2", SETTING_DEFS)
+        "GD3", SETTING_DEFS)
 end
 local function configLoad(key)
     if not key then return nil, nil, "Model path unavailable" end
@@ -836,7 +847,7 @@ local function configSave(widget)
     if record and record.payload ~= widget.configPayload then return false, "Settings changed in another instance; reopen" end
     local sequence = (record and record.sequence or 0) + 1
     if sequence > 1000000000 then return false, "Settings generation limit reached" end
-    local body = "GD2|" .. identityHex(key) .. "|" .. sequence .. "\n" .. payload
+    local body = "GD3|" .. identityHex(key) .. "|" .. sequence .. "\n" .. payload
     local bytes = body .. "CHECK=" .. tostring(digest(body)) .. "\n"
     if #bytes > CONFIG_LIMIT then return false, "Settings file too large" end
     local path = base .. (sequence % 2 == 1 and "a.cfg" or "b.cfg")
@@ -856,6 +867,7 @@ end
 
 local function read(widget)
     if not validWidget(widget) then return end
+    widget.displayStyle=1 -- absence of a supported display setting always means Deck
     widget.navigation = nil
     DisplayControl.clear(widget)
     local version=storage.read("v")
@@ -2014,6 +2026,59 @@ local function text(x, y, value, width, height, color, align, customFont, small)
     return tw, th
 end
 
+-- Unsupported widget areas draw a small notice, never an instrument frame.
+-- A real full-screen match is independent of focus and preserves its old path.
+function DisplayControl.fullScreenNotice(widget, width, height, appName)
+    local state = widget.displayControl
+    local known = state and finite(state.lcdWidth) and finite(state.lcdHeight)
+        and state.lcdWidth > 0 and state.lcdHeight > 0
+    if known and width == state.lcdWidth and height == state.lcdHeight then return false end
+    DisplayControl.clear(widget)
+    if not known then
+        -- Invalid partial cache pairs must not prevent the existing lookup retry.
+        if state then state.lcdWidth, state.lcdHeight = nil, nil end
+        local clock = os.clock()
+        if finite(clock) then widget.focusRepaintAt = clock + 1 end
+    end
+    local previousLCD, previousFrame = RenderLCD, DisplayFrame.active
+    RenderLCD, DisplayFrame.active = lcd, nil
+    local ok, problem = pcall(function()
+        local colors = palette(widget)
+        lcd.color(colors.background)
+        lcd.drawFilledRectangle(0, 0, width, height)
+        local padding = math.min(16, width * 0.04, height * 0.06)
+        local availableWidth = math.max(0.01, width - 2 * padding)
+        local availableHeight = math.max(0, height - 2 * padding)
+        local _, _, _, minimum = DeckCore.fitText("0", availableWidth, 1, nil, true)
+        if not finite(minimum) or minimum <= 0 then return end
+        local gap = 4
+        local count = math.min(3, math.floor((availableHeight + gap) / (minimum + gap)))
+        if count < 1 then return end
+        local title = known and "Full screen required" or "Screen size unavailable"
+        local hint = known and "Use a full-screen widget area" or "Retrying automatically"
+        local rows = count == 1 and {title} or count == 2 and {appName, title} or {appName, title, hint}
+        local rowHeight = (availableHeight - (count - 1) * gap) / count
+        for index = 1, count do
+            local font, fitted, tw, th = DeckCore.fitText(rows[index], availableWidth, rowHeight, nil, index == 3)
+            if fitted ~= "" and th <= rowHeight then
+                local x = math.max(0, (width - tw) / 2)
+                local y = padding + (index - 1) * (rowHeight + gap) + (rowHeight - th) / 2
+                y = math.max(0, math.min(y, height - th))
+                lcd.font(font)
+                lcd.color(index == 3 and colors.secondary or colors.foreground)
+                lcd.drawText(math.floor(x + 0.5), math.floor(y + 0.5), fitted, LEFT)
+            end
+        end
+    end)
+    RenderLCD, DisplayFrame.active = previousLCD, previousFrame
+    if previousFrame then
+        if previousFrame.font ~= nil then lcd.font(previousFrame.font) end
+        if previousFrame.color ~= nil then lcd.color(previousFrame.color) end
+    end
+    if not ok then error(problem, 0) end
+    return true
+end
+
 local function valueText(value, decimals, missing)
     if value == nil then return missing or "--" end
     if decimals==nil or decimals==0 then return string.format("%.0f",value) end
@@ -2143,19 +2208,145 @@ local function smallBattery(widget,colors,index,sx,sy)
         or valueText(percent,0).."%"),112*sx,28*sy,color,CENTERED)
 end
 
-local function drawRPM(widget,colors,index,x,width,sx,sy)
+-- Only Deck Hidden on short widget zones uses these native-pixel row gaps.
+-- Full-size Deck, photo/error layouts and Digital retain their original traces.
+local CompactDeck = {}
+-- Hidden keeps an immutable viewport recipe instead of allocating one seven-
+-- value table per RPM segment. The same rounded edges/triangles are emitted in
+-- one pass. Held commands own only this recipe plus captured scalar colors/data.
+function DisplayFrame.flowRPM(meter,activeCount,redZone,track,accent)
+    local frame,command=DisplayFrame.active,nil
+    if frame then
+        local commands,index=frame.commands,#frame.commands+1
+        if index<=1536 then
+            command={"rpmMeter",meter,activeCount,redZone,track,accent,n=5}
+            commands[index]=command
+        else frame.overflow=true end
+    end
+    local setColor,triangle,floor=lcd.color,lcd.drawFilledTriangle,renderFloor
+    local x,step,width,gap=meter.x,meter.step,meter.segmentWidth,meter.gap
+    local rows,exact=meter.rows,meter.flowExact
+    local color=track
+    local orangeAt,yellowAt=redZone-10,redZone-20
+    local red,orange,yellow=COLORS.red,COLORS.orange,COLORS.yellow
+    for segment=1,meter.count do
+        local px=x+(segment-1)*step
+        local edge=px+width
+        local left,right=floor(px+0.5),floor(edge+0.5)
+        local innerLeft=exact and left+2 or floor(px+gap+0.5)
+        local innerRight=exact and right-2 or floor(edge-gap+0.5)
+        local row=rows[segment]
+        local top,bottom=row[1],row[2]
+        color=track
+        if segment<=activeCount then
+            local position=row[3]
+            color=position>=redZone and red or position>=orangeAt and orange
+                or position>=yellowAt and yellow or accent
+        end
+        setColor(color)
+        triangle(innerLeft,top,right,top,left,bottom)
+        triangle(right,top,innerRight,bottom,left,bottom)
+    end
+    if frame then frame.color=color;if command then command.color=color end end
+end
+-- The existing opcode and original photo consumer remain intact. Dispatch only
+-- the explicitly tagged Hidden recipe; old meter objects use the old emitter.
+DisplayFrame.rpmMeter=function(meter,activeCount,redZone,track,accent)
+    if meter.flowRecipe then return DisplayFrame.flowRPM(meter,activeCount,redZone,track,accent) end
+    return drawPreparedRPM(meter,activeCount,redZone,track,accent)
+end
+
+function CompactDeck.rpm(widget,colors,index,x,width,sx,sy,compact,ratio)
+    local geometry=widget.renderGeometry
+    local meter=geometry.rpm[index]
+    local exact=sx==1 and sy==1 and not compact or nil
+    if not meter or not meter.flowRecipe or meter.x~=x or meter.width~=width
+        or meter.sx~=sx or meter.sy~=sy or meter.compact~=compact or meter.flowExact~=exact then
+        -- Keep the existing 12-strip narrow meter. Hidden may use 24 only
+        -- when its unrounded physical strip width is at least four pixels;
+        -- a fixed width/scale therefore keeps the same density at any height.
+        local count=width/sx<130 and 12 or ((width-23*2*sx)/24<4 and 12 or 24)
+        local gap=2*sx
+        local segmentWidth=(width-(count-1)*gap)/count
+        local layouts=geometry.rpmRows
+        if not layouts then layouts={};geometry.rpmRows=layouts end
+        local rowKey=compact and "compact"..count or count
+        local rows=layouts[rowKey]
+        if not rows then
+            rows={}
+            if compact then
+                local barTop,rise,barHeight=compact.barTop,compact.rise,compact.barHeight
+                for segment=1,count do
+                    local position=segment/count
+                    local py=barTop+(1-position^0.8)*rise
+                    rows[segment]={renderFloor(py+0.5),renderFloor(py+barHeight+0.5),position*100}
+                end
+            else
+                local barHeight=12*sy
+                for segment=1,count do
+                    local position=segment/count
+                    local py=(443-24*position^0.8)*sy
+                    local top=renderFloor(py+0.5)
+                    rows[segment]={top,exact and top+12 or renderFloor(py+barHeight+0.5),position*100}
+                end
+            end
+            layouts[rowKey]=rows
+        end
+        meter={flowRecipe=true,x=x,width=width,sx=sx,sy=sy,count=count,compact=compact,
+            flowExact=exact,rows=rows,step=segmentWidth+gap,segmentWidth=segmentWidth,gap=gap}
+        geometry.rpm[index]=meter
+    end
+    DisplayFrame.flowRPM(meter,math.ceil(ratio*meter.count),widget.redZone,colors.track,colors.accent)
+end
+
+function CompactDeck.geometry(widget,sx,sy)
+    local geometry=widget.renderGeometry
+    if geometry.compact then return geometry.compact end
+    local _,_,_,minimum=DeckCore.fitText("0",800,1,nil,true)
+    local gap=2
+    local footer=math.min(290*sy,318*sy-minimum-gap)
+    local top=122*sy
+    local valueHeight=math.max(minimum,(footer-gap-top-2*minimum-3*gap)/2)
+    local label=math.max(356*sy,321*sy+minimum+gap)
+    local bottom=SURFACE_HEIGHT-minimum
+    local barHeight,rise=math.max(3,minimum*0.35),math.max(2,minimum*0.25)
+    local barTop=bottom-barHeight-rise-gap
+    local valueY=label+minimum+gap
+    local compact={minimum=minimum,top=top,currentY=top+minimum+gap,
+        consumedLabelY=top+minimum+2*gap+valueHeight,
+        consumedY=top+2*minimum+3*gap+valueHeight,valueHeight=valueHeight,footerY=footer,
+        labelY=label,valueY=valueY,volumeY=valueY+minimum+gap,bottomY=bottom,
+        barTop=barTop,barHeight=barHeight,rise=rise,
+        rpmValueHeight=math.max(minimum,math.min(36*sy,barTop-valueY-gap))}
+    geometry.compact=compact
+    return compact
+end
+
+local function drawRPM(widget,colors,index,x,width,sx,sy,compact,hidden)
     local data=widget.data
     local reading=data["rpm"..index]
-    text(x,356*sy,data["rpmName"..index] or "RPM "..index,width,15*sy,colors.secondary,LEFT,nil,true)
-    text(x+width,376*sy,valueText(reading,0),width,36*sy,colors.foreground,RIGHT,widget.valueFont)
+    text(x,compact and compact.labelY or 356*sy,data["rpmName"..index] or "RPM "..index,width,
+        compact and compact.minimum or 15*sy,colors.secondary,LEFT,nil,true)
+    text(x+width,compact and compact.valueY or 376*sy,valueText(reading,0),width,
+        compact and compact.rpmValueHeight or 36*sy,colors.foreground,RIGHT,widget.valueFont)
     if widget.meterStyle==1 then
-        text(x,429*sy,"MAX "..valueText(widget.peakRPM[index],0).." rpm",width,15*sy,colors.accent,LEFT,nil,true)
+        text(x,compact and compact.bottomY or 429*sy,"MAX "..valueText(widget.peakRPM[index],0).." rpm",width,
+            compact and compact.minimum or 15*sy,colors.accent,LEFT,nil,true)
         return
     end
     local ratio=reading and clamp(reading/widget.rpmMaximum,0,1) or 0
+    if hidden then
+        CompactDeck.rpm(widget,colors,index,x,width,sx,sy,compact,ratio)
+    else
     local geometry=widget.renderGeometry
     local meter=geometry.rpm[index]
-    if not meter or meter.x~=x or meter.width~=width or meter.sx~=sx or meter.sy~=sy then
+    -- Reuse the existing immutable RPM batch. Only the exact full-size Hidden
+    -- grid has integer 2px insets / 12px strip height: round each edge once
+    -- instead of re-rounding its translated inner edge. Other grids retain the
+    -- original arithmetic, including every compact/photo/Digital path.
+    local flowExact=hidden and sx==1 and sy==1 and not compact or nil
+    if not meter or meter.flowRecipe or meter.x~=x or meter.width~=width or meter.sx~=sx or meter.sy~=sy
+        or meter.compact~=compact or meter.flowExact~=flowExact then
         local count=width/sx<130 and 12 or 24
         local gap=2*sx
         local segmentWidth=(width-(count-1)*gap)/count
@@ -2163,28 +2354,69 @@ local function drawRPM(widget,colors,index,x,width,sx,sy)
         -- Numeric rows are immutable and expire with renderGeometry on resize/destroy.
         local layouts=geometry.rpmRows
         if not layouts then layouts={};geometry.rpmRows=layouts end
-        local rows=layouts[count]
+        local rowKey=compact and "compact"..count or count
+        local rows=layouts[rowKey]
         if not rows then
             rows={}
-            for segment=1,count do
-                local py=(443-24*(segment/count)^0.8)*sy
-                rows[segment]={renderFloor((py)+0.5),renderFloor((py+12*sy)+0.5),segment/count*100}
+            if hidden then
+                -- The new Hidden geometry has fixed row constants for this
+                -- viewport. Keep the original expression order at each edge.
+                if compact then
+                    local barTop,rise,barHeight=compact.barTop,compact.rise,compact.barHeight
+                    for segment=1,count do
+                        local position=segment/count
+                        local py=barTop+(1-position^0.8)*rise
+                        rows[segment]={renderFloor(py+0.5),renderFloor(py+barHeight+0.5),position*100}
+                    end
+                else
+                    local barHeight=12*sy
+                    for segment=1,count do
+                        local position=segment/count
+                        local py=(443-24*position^0.8)*sy
+                        local top=renderFloor(py+0.5)
+                        rows[segment]={top,flowExact and top+12 or renderFloor(py+barHeight+0.5),position*100}
+                    end
+                end
+            else
+                for segment=1,count do
+                    local py=compact and compact.barTop+(1-(segment/count)^0.8)*compact.rise or (443-24*(segment/count)^0.8)*sy
+                    local top=renderFloor((py)+0.5)
+                    local bottom=flowExact and top+12 or renderFloor(py+(compact and compact.barHeight or 12*sy)+0.5)
+                    rows[segment]={top,bottom,segment/count*100}
+                end
             end
-            layouts[count]=rows
+            layouts[rowKey]=rows
         end
-        meter={x=x,width=width,sx=sx,sy=sy,count=count}
-        for segment=1,count do
-            local px=x+(segment-1)*(segmentWidth+gap)
-            local left,innerLeft,right,innerRight=renderFloor((px)+0.5),renderFloor((px+2*sx)+0.5),renderFloor((px+segmentWidth)+0.5),renderFloor((px+segmentWidth-2*sx)+0.5)
-            local row=rows[segment]
-            meter[segment]={left,innerLeft,right,innerRight,row[1],row[2],row[3]}
+        meter={x=x,width=width,sx=sx,sy=sy,count=count,compact=compact,flowExact=flowExact}
+        if hidden then
+            local step=segmentWidth+gap
+            for segment=1,count do
+                local px=x+(segment-1)*step
+                local edge=px+segmentWidth
+                local left,right=renderFloor(px+0.5),renderFloor(edge+0.5)
+                local innerLeft=flowExact and left+2 or renderFloor(px+gap+0.5)
+                local innerRight=flowExact and right-2 or renderFloor(edge-gap+0.5)
+                local row=rows[segment]
+                meter[segment]={left,innerLeft,right,innerRight,row[1],row[2],row[3]}
+            end
+        else
+            for segment=1,count do
+                local px=x+(segment-1)*(segmentWidth+gap)
+                local left,right=renderFloor((px)+0.5),renderFloor((px+segmentWidth)+0.5)
+                local innerLeft=flowExact and left+2 or renderFloor((px+2*sx)+0.5)
+                local innerRight=flowExact and right-2 or renderFloor((px+segmentWidth-2*sx)+0.5)
+                local row=rows[segment]
+                meter[segment]={left,innerLeft,right,innerRight,row[1],row[2],row[3]}
+            end
         end
         geometry.rpm[index]=meter
     end
     local activeCount=math.ceil(ratio*meter.count)
     drawPreparedRPM(meter,activeCount,widget.redZone,colors.track,colors.accent)
-    text(x,458*sy,"0",30*sx,12*sy,colors.secondary,LEFT,nil,true)
-    text(x+width,458*sy,string.format("%.0fk",widget.rpmMaximum/1000),45*sx,12*sy,colors.secondary,RIGHT,nil,true)
+    end
+    text(x,compact and compact.bottomY or 458*sy,"0",30*sx,compact and compact.minimum or 12*sy,colors.secondary,LEFT,nil,true)
+    text(x+width,compact and compact.bottomY or 458*sy,string.format("%.0fk",widget.rpmMaximum/1000),45*sx,
+        compact and compact.minimum or 12*sy,colors.secondary,RIGHT,nil,true)
 end
 
 local function drawPreparedFuel(bars,reserveCount,activeCount,track,accent,background)
@@ -2213,7 +2445,42 @@ local function drawPreparedFuel(bars,reserveCount,activeCount,track,accent,backg
 end
 DisplayFrame.fuelMeter=drawPreparedFuel
 
-local function drawFuel(widget,colors,x,width,sx,sy)
+function CompactDeck.fuel(widget,colors,x,width,sx,sy,compact)
+    local data=widget.data
+    local color=data.fuelLow and COLORS.red or colors.accent
+    text(x,compact.labelY,"FUEL FLOW",width,compact.minimum,colors.secondary,LEFT,nil,true)
+    text(x+width,compact.valueY,valueText(data.flow,1).." ml/min",width,compact.minimum,colors.foreground,RIGHT,widget.valueFont)
+    text(x,compact.volumeY,valueText(data.fuelRemaining,0).." ml",width*0.62,compact.minimum,color,LEFT,widget.valueFont)
+    text(x+width,compact.volumeY,valueText(data.fuelPercent,0).."%",width*0.36,compact.minimum,color,RIGHT,widget.valueFont)
+    local bars=widget.renderGeometry.compactFuel
+    if not bars or bars.x~=x or bars.width~=width then
+        local padding=compact.minimum
+        local count,gap=24,2*sx
+        local span=math.max(1,width-2*padding)
+        local barWidth=(span-(count-1)*gap)/count
+        local h=math.max(2,compact.minimum*0.28)
+        local y=compact.bottomY+(compact.minimum-h)/2
+        bars={x=x,width=width,count=count,outerDraw=barWidth>0 and 1 or 0,
+            innerDraw=barWidth>0 and h>2 and 1 or 0}
+        -- These five edges are invariant across all 24 compact fuel bars.
+        -- Hoist the exact original arithmetic, including fractional grids.
+        local origin,step=x+padding,barWidth+gap
+        local top,innerY=renderFloor(y+0.5),renderFloor(y+1+0.5)
+        local roundedW,outerH=math.max(0,renderFloor(barWidth+0.5)),renderFloor(h+0.5)
+        local innerH=math.max(0,renderFloor(h-2+0.5))
+        for segment=1,count do
+            bars[segment]={renderFloor(origin+(segment-1)*step+0.5),top,roundedW,outerH,innerY,innerH}
+        end
+        widget.renderGeometry.compactFuel=bars
+    end
+    drawPreparedFuel(bars,math.floor(widget.fuelWarning/100*bars.count),
+        data.fuelPercent and math.ceil(data.fuelPercent/100*bars.count) or 0,colors.track,colors.accent,colors.background)
+    text(x,compact.bottomY,"E",compact.minimum,compact.minimum,COLORS.red,LEFT,nil,true)
+    text(x+width,compact.bottomY,"F",compact.minimum,compact.minimum,colors.secondary,RIGHT,nil,true)
+end
+
+local function drawFuel(widget,colors,x,width,sx,sy,compact)
+    if compact then CompactDeck.fuel(widget,colors,x,width,sx,sy,compact);return end
     local data=widget.data
     local color=data.fuelLow and COLORS.red or colors.accent
     text(x,356*sy,"FUEL FLOW",width,15*sy,colors.secondary,LEFT,nil,true)
@@ -2331,6 +2598,144 @@ local function keepFocus(widget, width, height)
     DisplayControl.paint(widget, width, height)
 end
 
+-- Digital · Engine is an optional presentation of the same polled data. It
+-- never selects sensors, couples instrument counts, or changes engine state.
+-- Hidden alone releases photo space: failed/missing selected photos keep it.
+local DigitalEngine = {}
+function DigitalEngine.panel(colors,x,y,width,height,sx,sy)
+    rect(x*sx,y*sy,width*sx,height*sy,colors.track)
+    rect(x*sx,y*sy,2*sx,height*sy,colors.accent)
+end
+function DigitalEngine.reserve(colors,x,y,width,percent,tone,sx,sy)
+    rect(x*sx,y*sy,width*sx,5*sy,colors.border)
+    if percent~=nil then rect(x*sx,y*sy,width*clamp(percent,0,100)/100*sx,5*sy,tone) end
+end
+function DigitalEngine.rx(widget,colors,index,x,sx,sy)
+    local data,prefix=widget.data,"rx"..index
+    local percent=data[prefix.."Percent"]
+    local tone=batteryColor(percent)
+    local reset=data[prefix.."CounterReset"] and widget[prefix.."Method"]==1
+    DigitalEngine.panel(colors,x,326,184,118,sx,sy)
+    text((x+12)*sx,337*sy,"RX "..index,65*sx,22*sy,colors.secondary,LEFT,nil,true)
+    text((x+172)*sx,337*sy,valueText(percent,0).."%",84*sx,22*sy,tone,RIGHT)
+    text((x+12)*sx,365*sy,valueText(data[prefix],2).." V",160*sx,30*sy,colors.foreground,LEFT,widget.valueFont)
+    local method=widget[prefix.."Method"]
+    local detail=reset and "CHECK mAh" or method==1 and ("USED "..valueText(data[prefix.."Used"],0).."mAh")
+        or method==2 and "% SENSOR" or "VOLT ESTIMATE"
+    text((x+12)*sx,397*sy,detail,160*sx,22*sy,reset and COLORS.red or colors.secondary,LEFT,nil,true)
+    if method==1 then
+        text((x+12)*sx,419*sy,"CAP "..widget[prefix.."Capacity"].."mAh",160*sx,22*sy,colors.secondary,LEFT,nil,true)
+    end
+    rect((x+12)*sx,441*sy,160*sx,2*sy,colors.border)
+    if percent~=nil then rect((x+12)*sx,441*sy,160*clamp(percent,0,100)/100*sx,2*sy,tone) end
+end
+function DigitalEngine.rpm(widget,colors,index,x,y,width,height,sx,sy)
+    local data=widget.data
+    local reading=data["rpm"..index]
+    DigitalEngine.panel(colors,x,y,width,height,sx,sy)
+    text((x+12)*sx,(y+8)*sy,data["rpmName"..index] or "RPM "..index,(width-24)*sx,22*sy,
+        colors.secondary,LEFT,nil,true)
+    text((x+12)*sx,(y+33)*sy,valueText(reading,0),(width-24)*sx,(height-65)*sy,
+        colors.foreground,LEFT,widget.valueFont)
+    if widget.meterStyle==1 then
+        text((x+12)*sx,(y+height-27)*sy,"MAX "..valueText(widget.peakRPM[index],0).." rpm",
+            (width-24)*sx,22*sy,colors.accent,LEFT,nil,true)
+    else
+        local count,gap=12,2
+        local barWidth=(width-24-(count-1)*gap)/count
+        local ratio=reading and clamp(reading/widget.rpmMaximum,0,1) or 0
+        for segment=1,count do
+            local position=segment/count*100
+            local tone=segment<=math.ceil(ratio*count) and
+                (position>=widget.redZone and COLORS.red or position>=widget.redZone-10 and COLORS.orange
+                or position>=widget.redZone-20 and COLORS.yellow or colors.accent) or colors.border
+            rect((x+12+(segment-1)*(barWidth+gap))*sx,(y+height-18)*sy,barWidth*sx,6*sy,tone)
+        end
+    end
+end
+function DigitalEngine.temperature(widget,colors,index,x,y,width,height,sx,sy)
+    local data=widget.data
+    local value=data["temp"..index]
+    local shown=widget.tempUnit==2 and value and value*9/5+32 or value
+    local tone=value and (value>=widget.tempCritical and COLORS.red or value>=widget.tempWarning and COLORS.yellow)
+        or colors.foreground
+    DigitalEngine.panel(colors,x,y,width,height,sx,sy)
+    text((x+12)*sx,(y+7)*sy,data["tempName"..index] or "TEMP "..index,(width-24)*sx,22*sy,
+        colors.secondary,LEFT,nil,true)
+    text((x+12)*sx,(y+33)*sy,valueText(shown,0)..(widget.tempUnit==2 and " F" or " C"),
+        (width-24)*sx,(height-37)*sy,tone,LEFT,widget.valueFont)
+end
+function DigitalEngine.paint(widget,colors,sx,sy)
+    local data=widget.data
+    text(24*sx,10*sy,data.modelName or "GasDeck",292*sx,39*sy,colors.foreground,LEFT,widget.valueFont)
+    text(24*sx,61*sy,(widget.engineBrand~="" and widget.engineBrand.." / " or "")
+        ..widget.engineCC.." cc"..(widget.engineCount>1 and " / "..widget.engineCount.." engines" or ""),
+        294*sx,22*sy,colors.secondary,LEFT,nil,true)
+    for channel=1,widget.rfCount do
+        local y=(11+(channel-1)*28)*sy
+        local reading,unit=data["rssi"..channel],data["rssi"..channel.."Unit"] or "dB"
+        local _,_,warning,critical=rfLimits(widget,unit,channel)
+        local tone=reading==nil and colors.secondary or reading<=critical and COLORS.red
+            or reading<=warning and COLORS.yellow or colors.accent
+        text(353*sx,y,data["rssi"..channel.."Name"] or "RF"..channel,83*sx,22*sy,colors.secondary,LEFT,nil,true)
+        text(501*sx,y,valueText(reading,0)..unit,63*sx,22*sy,tone,RIGHT,nil,true)
+    end
+    local ignitionColor=data.ignition==nil and colors.border or data.ignition and COLORS.green or COLORS.red
+    local ignitionFill=data.ignition==nil and COLORS.ignitionUnknown
+        or data.ignition and COLORS.ignitionOn or COLORS.ignitionOff
+    rounded(525*sx,10*sy,94*sx,48*sy,5*math.min(sx,sy),ignitionFill)
+    text(572*sx,12*sy,sx<0.8 and "IGN" or "IGNITION",82*sx,18*sy,COLORS.white,CENTERED,nil,true)
+    text(572*sx,36*sy,data.ignition==nil and "--" or data.ignition and "ON" or "OFF",82*sx,18*sy,ignitionColor,CENTERED)
+    text(572*sx,65*sy,"TX "..valueText(data.tx,1).." V",94*sx,22*sy,colors.foreground,CENTERED)
+    text(776*sx,10*sy,timerText(data.timer),151*sx,40*sy,colors.foreground,RIGHT,widget.valueFont)
+    text(776*sx,65*sy,"FLIGHT TIME",151*sx,22*sy,colors.secondary,RIGHT,nil,true)
+    rect(24*sx,100*sy,752*sx,1*sy,colors.border)
+    local hidden=widget.imageMode==3
+    local x,width=hidden and 24 or 288,hidden and 752 or 488
+    if not hidden then
+        if widget.modelImage then
+            local factor=math.min(248*sx/widget.imageWidth,184*sy/widget.imageHeight)
+            local w,h=widget.imageWidth*factor,widget.imageHeight*factor
+            RenderLCD.drawBitmap(round(24*sx+(248*sx-w)/2),round(112*sy+(184*sy-h)/2),widget.modelImage,round(w),round(h))
+        else
+            DigitalEngine.panel(colors,24,112,248,184,sx,sy)
+            text(148*sx,181*sy,widget.imageError or "MODEL IMAGE",224*sx,22*sy,colors.secondary,CENTERED,nil,true)
+        end
+    end
+    local rpmCount,tempCount=widget.rpmCount,widget.tempCount
+    local rpmHeight=tempCount>0 and 108 or 184
+    if rpmCount>0 then
+        local column=(width+8)/rpmCount
+        for index=1,rpmCount do DigitalEngine.rpm(widget,colors,index,x+(index-1)*column,112,column-8,rpmHeight,sx,sy) end
+    end
+    if tempCount>0 then
+        local top,height=rpmCount>0 and 232 or 112,rpmCount>0 and 64 or 184
+        local column=(width+8)/tempCount
+        for index=1,tempCount do DigitalEngine.temperature(widget,colors,index,x+(index-1)*column,top,column-8,height,sx,sy) end
+    end
+    if rpmCount==0 and tempCount==0 then
+        DigitalEngine.panel(colors,x,112,width,184,sx,sy)
+        text((x+16)*sx,126*sy,"FUEL RESERVE",(width-32)*sx,22*sy,colors.secondary,LEFT,nil,true)
+        text((x+16)*sx,162*sy,valueText(data.fuelPercent,0).."%",(width-32)*sx,65*sy,
+            data.fuelLow and COLORS.red or colors.accent,LEFT,widget.valueFont)
+        text((x+16)*sx,258*sy,"Engine instruments are hidden",(width-32)*sx,22*sy,colors.secondary,LEFT,nil,true)
+    end
+    text(24*sx,302*sy,"RX TOTAL  "..valueText(data.current,2).." A  /  "..valueText(data.used,0).." mAh",
+        500*sx,22*sy,colors.secondary,LEFT,nil,true)
+    DigitalEngine.panel(colors,24,326,352,118,sx,sy)
+    text(40*sx,337*sy,"FUEL",320*sx,22*sy,colors.secondary,LEFT,nil,true)
+    local fuelTone=data.fuelLow and COLORS.red or colors.accent
+    text(40*sx,362*sy,valueText(data.fuelPercent,0).."%",138*sx,37*sy,fuelTone,LEFT,widget.valueFont)
+    text(360*sx,369*sy,valueText(data.fuelRemaining,0).." ml",169*sx,29*sy,fuelTone,RIGHT,widget.valueFont)
+    DigitalEngine.reserve(colors,40,405,320,data.fuelPercent,fuelTone,sx,sy)
+    text(40*sx,417*sy,"FLOW  "..valueText(data.flow,1).." ml/min",320*sx,22*sy,colors.foreground,LEFT,nil,true)
+    DigitalEngine.rx(widget,colors,1,392,sx,sy);DigitalEngine.rx(widget,colors,2,592,sx,sy)
+    local footer=widget.preview and "SYNTHETIC PREVIEW / NO ALERTS OR FLIGHT COUNT"
+        or ((data.rx1CounterReset and widget.rx1Method==1) or (data.rx2CounterReset and widget.rx2Method==1)) and "RX COUNTER RESET: CHECK BATTERY"
+        or data.fuelLow and "LOW FUEL" or data.rxLow and "LOW RX BATTERY" or data.fuelNote or "SELECT TELEMETRY"
+    text(24*sx,455*sy,footer,752*sx,22*sy,colors.secondary,LEFT,nil,true)
+end
+
 local function render(widget, width, height)
     SURFACE_WIDTH,SURFACE_HEIGHT=width,height
     local sx,sy=width/800,height/480
@@ -2346,6 +2751,7 @@ local function render(widget, width, height)
     widget.graphWidth,widget.graphHeight=width,height
     if widget.diagnosticsVisible then paintDiagnostics(widget,colors,sx,sy);return end
     if widget.logVisible then paintFlight(widget,colors,sx,sy);return end
+    if widget.displayStyle==2 then DigitalEngine.paint(widget,colors,sx,sy);return end
     text(24*sx,9*sy,"MODEL",286*sx,17*sy,colors.secondary,LEFT,nil,true)
     text(24*sx,30*sy,data.modelName or "GasDeck",292*sx,39*sy,colors.foreground,LEFT,widget.valueFont)
     text(24*sx,78*sy,(widget.engineBrand~="" and widget.engineBrand.." / " or "")
@@ -2367,7 +2773,25 @@ local function render(widget, width, height)
     text(776*sx,78*sy,"FLIGHT TIME",151*sx,16*sy,colors.secondary,RIGHT,nil,true)
     text(572*sx,69*sy,"TX "..valueText(data.tx,1).." V",94*sx,26*sy,colors.foreground,CENTERED)
     rect(24*sx,103*sy,752*sx,1*sy,colors.border)
-    if widget.modelImage then
+    -- Deck A / Flow releases only the explicitly hidden photo area. The
+    -- independent upright RX reserves and existing lower instruments stay put.
+    local hidden=widget.imageMode==3
+    local compact=hidden and height<300 and CompactDeck.geometry(widget,sx,sy) or nil
+    if hidden then
+        if compact then
+            text(40*sx,compact.top,"RX TOTAL CURRENT",472*sx,compact.minimum,colors.secondary,LEFT,nil,true)
+            text(40*sx,compact.currentY,valueText(data.current,2).." A",472*sx,compact.valueHeight,colors.foreground,LEFT,widget.valueFont)
+            text(40*sx,compact.consumedLabelY,"RX TOTAL CONSUMED",472*sx,compact.minimum,colors.secondary,LEFT,nil,true)
+            text(40*sx,compact.consumedY,valueText(data.used,0).." mAh",472*sx,compact.valueHeight,colors.foreground,LEFT,widget.valueFont)
+            rect(540*sx,116*sy,1*sx,compact.footerY+compact.minimum-116*sy,colors.border)
+        else
+            text(40*sx,122*sy,"RX TOTAL CURRENT",472*sx,22*sy,colors.secondary,LEFT,nil,true)
+            text(40*sx,145*sy,valueText(data.current,2).." A",472*sx,59*sy,colors.foreground,LEFT,widget.valueFont)
+            text(40*sx,210*sy,"RX TOTAL CONSUMED",472*sx,22*sy,colors.secondary,LEFT,nil,true)
+            text(40*sx,238*sy,valueText(data.used,0).." mAh",472*sx,44*sy,colors.foreground,LEFT,widget.valueFont)
+            rect(540*sx,116*sy,1*sx,178*sy,colors.border)
+        end
+    elseif widget.modelImage then
         local factor=math.min(277*sx/widget.imageWidth,156*sy/widget.imageHeight)
         local w,h=widget.imageWidth*factor,widget.imageHeight*factor
         RenderLCD.drawBitmap(round(24*sx+(277*sx-w)/2),round(116*sy+(156*sy-h)/2),widget.modelImage,round(w),round(h))
@@ -2375,11 +2799,13 @@ local function render(widget, width, height)
         rounded(24*sx,122*sy,277*sx,139*sy,10*math.min(sx,sy),colors.track)
         text(162*sx,172*sy,widget.imageError or "MODEL IMAGE",249*sx,22*sy,colors.secondary,CENTERED,nil,true)
     end
-    text(329*sx,127*sy,"RX CURRENT",198*sx,16*sy,colors.secondary,LEFT,nil,true)
-    text(329*sx,151*sy,valueText(data.current,2).." A",198*sx,38*sy,colors.foreground,LEFT,widget.valueFont)
-    text(329*sx,204*sy,"RX CONSUMED",198*sx,16*sy,colors.secondary,LEFT,nil,true)
-    text(329*sx,228*sy,valueText(data.used,0).." mAh",198*sx,34*sy,colors.foreground,LEFT,widget.valueFont)
-    text(329*sx,276*sy,"FUEL "..valueText(data.fuelPercent,0).."%",198*sx,22*sy,data.fuelLow and COLORS.red or colors.accent)
+    if not hidden then
+        text(329*sx,127*sy,"RX CURRENT",198*sx,16*sy,colors.secondary,LEFT,nil,true)
+        text(329*sx,151*sy,valueText(data.current,2).." A",198*sx,38*sy,colors.foreground,LEFT,widget.valueFont)
+        text(329*sx,204*sy,"RX CONSUMED",198*sx,16*sy,colors.secondary,LEFT,nil,true)
+        text(329*sx,228*sy,valueText(data.used,0).." mAh",198*sx,34*sy,colors.foreground,LEFT,widget.valueFont)
+        text(329*sx,276*sy,"FUEL "..valueText(data.fuelPercent,0).."%",198*sx,22*sy,data.fuelLow and COLORS.red or colors.accent)
+    end
     smallBattery(widget,colors,1,sx,sy);smallBattery(widget,colors,2,sx,sy)
     rect(24*sx,313*sy,752*sx,1*sy,colors.border)
     for index=1,widget.tempCount do
@@ -2395,13 +2821,20 @@ local function render(widget, width, height)
     end
     if widget.rpmCount>0 then
         local boxWidth=472/widget.rpmCount
-        for index=1,widget.rpmCount do drawRPM(widget,colors,index,(24+(index-1)*boxWidth)*sx,(boxWidth-15)*sx,sx,sy) end
-        drawFuel(widget,colors,520*sx,256*sx,sx,sy)
-    else drawFuel(widget,colors,24*sx,752*sx,sx,sy) end
+        for index=1,widget.rpmCount do drawRPM(widget,colors,index,(24+(index-1)*boxWidth)*sx,(boxWidth-15)*sx,sx,sy,compact,hidden) end
+        drawFuel(widget,colors,520*sx,256*sx,sx,sy,compact)
+    else drawFuel(widget,colors,24*sx,752*sx,sx,sy,compact) end
     local footer=widget.preview and "SYNTHETIC PREVIEW / NO ALERTS OR FLIGHT COUNT"
         or ((data.rx1CounterReset and widget.rx1Method==1) or (data.rx2CounterReset and widget.rx2Method==1)) and "RX COUNTER RESET: CHECK BATTERY"
         or data.fuelLow and "LOW FUEL" or data.rxLow and "LOW RX BATTERY" or data.fuelNote or "SELECT TELEMETRY"
-    text(24*sx,299*sy,footer,520*sx,12*sy,colors.secondary,LEFT,nil,true)
+    if hidden then
+        -- A separate message row cannot overlap the enlarged RX totals or
+        -- temperatures, even while a counter/refuel/preview status is active.
+        text(24*sx,compact and compact.footerY or 290*sy,footer,504*sx,
+            compact and compact.minimum or 20*sy,colors.secondary,LEFT,nil,true)
+    else
+        text(24*sx,299*sy,footer,520*sx,12*sy,colors.secondary,LEFT,nil,true)
+    end
 end
 
 local function paint(widget)
@@ -2414,6 +2847,7 @@ local function paint(widget)
     if not validWidget(widget) then return end
     keepFocus(widget, width, height)
     if not validWidget(widget) then return end
+    if DisplayControl.fullScreenNotice(widget, width, height, "GasDeck") then return end
     local state, key = widget.displayControl, DisplayFrame.key(widget, width, height)
     if state.frame and state.frame.signature ~= key then DisplayControl.clear(widget) end
     local held, epoch = state.holdUntil ~= nil, state.epoch or 0
@@ -2545,7 +2979,7 @@ local function configure(widget)
     end
     cancelAutoLog(widget)
     widget.configPanel=nil
-    form.addLine("GasDeck "..VERSION)
+    form.addLine("GasDeck")
     local function group(label)
         widget.configPanel=form.addExpansionPanel(label);widget.configPanel:open(false)
     end
@@ -2554,6 +2988,7 @@ local function configure(widget)
         local ok,width=pcall(form.width)
         return form.addStaticText(line,{x=10,y=0,w=ok and width-20 or 720,h=30},message)
     end
+    note("Version "..VERSION)
     local function boolean(label,key)
         local line=form.addLine(label,widget.configPanel)
         form.addBooleanField(line,nil,function() return widget[key] end,function(value) if not currentForm() then return end; widget[key]=value;cancelAutoLog(widget);changed(widget,true)
@@ -2577,7 +3012,11 @@ local function configure(widget)
         end)
     end
     if widget.configError then note(widget.configError) end
-    group("Model / appearance")
+    group("Appearance")
+    choiceField(widget,"Display style","displayStyle",{{"Deck",1},{"Digital",2}},refreshFields)
+    bindings[#bindings+1]={field=note(""),text=function()
+        return widget.displayStyle==2 and "Instrument focus: Engine" or ""
+    end}
     stringField("Engine brand","engineBrand")
     numberField(widget,"Displacement","engineCC",0,1000,"cc",1)
     numberField(widget,"Engine count","engineCount",1,4,nil,1)

@@ -10,12 +10,16 @@ Samme ZIP brukes til begge installasjonsmåtene:
 
 Start ETHOS på nytt etter installasjonen. Ved første installasjon velger du
 **GasDeck** i et fullskjerms widgetfelt. Åpne **Configure widget** fra widgetmenyen
-og kontroller versjonen øverst. Suite viser denne versjonen som **26.10.6**.
+og kontroller versjonen øverst. Suite viser denne versjonen som **26.10.7**.
 Hvis installasjonen ikke vises oppdatert i Suite, gå ut av og inn i **Lua library**.
 Viser widgeten fortsatt en eldre versjon etter omstart, koble til radioen igjen,
 fjern bare `/scripts/GasDeck/main.luac` og start ETHOS på nytt.
 Ta sikkerhetskopi av modellen før oppdatering. Behold widgeten som er satt opp og cfg/dat-filene;
 lagrede innstillinger, kildevalg og flytellere beholdes.
+
+**Fullskjerm:** Widgetfeltet må fylle hele LCD-flaten på radioen. Dette gjelder også radioer med lavere oppløsning. Et delt felt viser **Full screen required**; velg et fullskjermsfelt for å få instrumentene tilbake. **Screen size unavailable** betyr at skjermmål ikke kunne leses; appen prøver automatisk på nytt. Valgte kilder og innstillinger beholdes.
+
+Se [oppgradering og tilbakeføring](GasDeck.md#upgrading-and-rollback) før du går tilbake til en eldre utgave.
 
 Denne gjennomgangen bruker TD SR18 med to RX-batterier og AES II med én RPM- og
 én temperaturvisning. Følg **Configure widget** fra toppen og ned.
@@ -30,6 +34,8 @@ ETHOS' kildevelger kan også vise andre sensortyper; kontroller enheten før du 
 Etter side- eller modellbytte kan første trykk velge widgeten og neste åpne
 menyen. Se [Home-meny og navigasjon](#home-meny-og-navigasjon) for Diagnostics og RTN.
 
+Enkelte menybilder viser den tidligere menyrekkefølgen. Bruk felttabellene nedenfor for **Display style** og dagens grupperekkefølge.
+
 <table>
 <tr>
 <td><img src="images/gasdeck-widget-menu.png" alt="GasDecks widgetmeny"><br><b>Widgetmeny</b></td>
@@ -37,7 +43,13 @@ menyen. Se [Home-meny og navigasjon](#home-meny-og-navigasjon) for Diagnostics o
 </tr>
 </table>
 
-## 1. Model / appearance
+## 1. Appearance
+
+Velg **Display style = Deck** for de stående batteriene og den kjente instrumenteringen. **Digital** gir en alternativ instrumentvisning med **Instrument focus: Engine**. Fokuslinjen er informasjon om denne visningen. Deck er standard for nye modeller og innstillinger fra utgaver før Digital. Tidligere lagrede Deck/Digital-valg beholdes.
+
+**Image source** er et eget valg i begge stiler: **Selected model**, **Image file** eller **Hidden**. Med Hidden brukes bildeplassen til større målinger. I Deck beholder et valgt modellbilde den kjente sammensetningen. En bildefeil beholder bildeplassen og viser feilen; manglende telemetri flytter heller ikke instrumentene.
+
+Stil- og bildevalg endrer ikke beregningsmetoder, telemetrikilder, enheter, varsler, godkjenning eller flylogg. Grå felt beholder sine lagrede verdier.
 
 Angi motorens **Engine brand**, **Displacement** og **Engine count**.
 For dette eksemplet med én motor velger du **Engine count = 1**.
