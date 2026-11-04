@@ -12,7 +12,7 @@ Samme ZIP brukes til begge installasjonsmåtene:
 
 Start ETHOS på nytt etter installasjonen. Ved første installasjon velger du
 **GasDeck** i et fullskjerms widgetfelt. Åpne **Configure widget** fra widgetmenyen
-og kontroller versjonen øverst. Suite viser denne versjonen som **26.10.7**.
+og kontroller versjonen øverst. Suite viser denne versjonen som **26.11.1**.
 Hvis installasjonen ikke vises oppdatert i Suite, gå ut av og inn i **Lua library**.
 Viser widgeten fortsatt en eldre versjon etter omstart, koble til radioen igjen,
 fjern bare `/scripts/GasDeck/main.luac` og start ETHOS på nytt.
@@ -36,7 +36,7 @@ ETHOS' kildevelger kan også vise andre sensortyper; kontroller enheten før du 
 Etter side- eller modellbytte kan første trykk velge widgeten og neste åpne
 menyen. Se [Home-meny og navigasjon](#home-meny-og-navigasjon) for Diagnostics og RTN.
 
-Widgetmenyen og Appearance-bildene nedenfor viser gjeldende stabile versjon. Eldre detaljbilder av kilder og varsler beholdes som feltreferanser; bruk tabellene for dagens grupperekkefølge og velg egne oppdagede sensorer.
+Eldre bilder av widgetmenyen og Appearance er fortsatt feltreferanser. De nye Sensor setup-bildene viser dagens konfigurasjonsrekkefølge.
 
 <table>
 <tr>
@@ -44,6 +44,27 @@ Widgetmenyen og Appearance-bildene nedenfor viser gjeldende stabile versjon. Eld
 <td><img src="images/native-gasdeck-engine-count.png" alt="GasDeck Appearance"><br><b>Appearance</b></td>
 </tr>
 </table>
+
+## Sensor setup
+
+Oppdag modellens sensorer i **ETHOS → Telemetry** først. Åpne **Configure widget → Sensor setup**.
+
+1. Trykk **Suggest sensors**. Forslagene bruker målingstype, enhet og sensornavn.
+2. Se gjennom listen. Velg sensor der flere passer; la ubrukte felt stå tomme.
+3. Trykk **Apply...**, kontroller bekreftelsen og velg **Use suggestions**. **Cancel** lagrer ingenting.
+
+Tilgjengelige kildevalg beholdes, også når sensoren midlertidig er frakoblet. En manglende kilde erstattes bare når du selv velger en erstatning. **Clear** forkaster forslagene. De vanlige kildefeltene kan fortsatt brukes.
+
+Med to RX-spenninger og én felles forbrukssensor foreslår bekreftelsen **Voltage estimate** for hvert batteri som mangler egen forbrukskilde. Total strøm og forbruk forblir felles. En ny **AES flow**-kilde foreslår **Integrate flow**; kontroller tankvolum og bruk **Refuel...** før flyging. Maksimums- og gjennomsnittsflow tas ikke med.
+
+Sensor setup oppretter ikke beregnede sensorer. Mangler consumed mAh, opprett en forbrukssensor fra strøm i ETHOS og kjør **Suggest sensors** på nytt. Kontroller batteriinnstillinger og telemetri før flyging.
+
+<table>
+<tr><td><img src="images/sensor-setup-menu.png" alt="GasDeck konfigurasjon og versjon"><br><b>Åpne Sensor setup</b></td><td><img src="images/sensor-setup-scan.png" alt="Sensorforslag"><br><b>Finn passende sensorer</b></td></tr>
+<tr><td><img src="images/sensor-setup-choices.png" alt="Valg mellom passende radiosignalkilder"><br><b>Velg mellom flere treff</b></td><td><img src="images/sensor-setup-confirm.png" alt="Bekreftelse før lagring"><br><b>Bekreft før lagring</b></td></tr>
+</table>
+
+De nye menybildene viser GasDeck 2026.11-v1 i ETHOS 26.2.0 RC2-simulatoren for X20RS med eksempelsensorer. Navn og antall treff avhenger av modellen din.
 
 ## 1. Appearance
 

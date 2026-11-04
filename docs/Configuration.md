@@ -27,7 +27,7 @@ After a page or model change, the first press may select the widget and the next
 opens its menu. See [Home menu and navigation](#home-menu-and-navigation) for
 Diagnostics and RTN.
 
-The widget menu and Appearance pictures below show the current stable version. Older detailed source/alert pictures remain as field references; use the tables for the current group order and select your own discovered sensors.
+Earlier menu and Appearance pictures below remain field references. The new Sensor setup pictures show the current configuration order.
 
 <table>
 <tr>
@@ -35,6 +35,27 @@ The widget menu and Appearance pictures below show the current stable version. O
 <td><img src="images/native-gasdeck-engine-count.png" alt="GasDeck Appearance"><br><b>Appearance</b></td>
 </tr>
 </table>
+
+## Sensor setup
+
+Discover the model's sensors in **ETHOS → Telemetry** first. Open **Configure widget → Sensor setup**.
+
+1. Press **Suggest sensors**. Matches use the measurement type, unit and sensor name.
+2. Review the list. Choose a sensor where alternatives are offered; leave unused fields empty.
+3. Press **Apply...**, check the confirmation and choose **Use suggestions**. **Cancel** saves nothing.
+
+Available selections are kept, including sensors that are temporarily offline. A missing source is replaced only when you choose a replacement. **Clear** discards the suggestions. You can still use the ordinary source fields.
+
+With two RX voltages and one shared consumed-mAh sensor, the confirmation proposes **Voltage estimate** for each battery without its own consumption source. Total current and consumption stay shared. A newly assigned **AES flow** proposes **Integrate flow**; check tank capacity and use **Refuel...** before flying. Maximum and average flow readings are excluded.
+
+Sensor setup does not create calculated sensors. If consumed mAh is missing, create a consumption sensor from current in ETHOS, then run **Suggest sensors** again. Confirm the battery settings and telemetry before flying.
+
+<table>
+<tr><td><img src="images/sensor-setup-menu.png" alt="GasDeck configuration and version"><br><b>Open Sensor setup</b></td><td><img src="images/sensor-setup-scan.png" alt="Sensor suggestions"><br><b>Find suitable sensors</b></td></tr>
+<tr><td><img src="images/sensor-setup-choices.png" alt="Choice between matching radio-link sensors"><br><b>Choose between alternatives</b></td><td><img src="images/sensor-setup-confirm.png" alt="Confirmation before saving"><br><b>Confirm before saving</b></td></tr>
+</table>
+
+These new menu captures show GasDeck 2026.11-v1 in the ETHOS 26.2.0 RC2 X20RS simulator with example sensors. Names and match counts depend on your model.
 
 ## 1. Appearance
 

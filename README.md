@@ -2,9 +2,9 @@
 
 A full-screen receiver-power, gasoline-engine and fuel dashboard for FrSky ETHOS 1.6.6 and 26.1.2.
 
-**GasDeck 2026.10-v7: latest release. Physical radio testing passed.**
+**GasDeck 2026.11-v1: latest release. Physical radio testing passed.**
 
-[Download GasDeck-2026.10-v7.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v7/GasDeck-2026.10-v7.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.10-v7)
+[Download GasDeck-2026.11-v1.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v1/GasDeck-2026.11-v1.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.11-v1)
 
 <table>
 <tr>
@@ -60,9 +60,13 @@ Changing style or image does not change calculation methods, telemetry sources, 
 - Per-model counter, retained last flight and optional delayed automatic log opening.
 - Radio theme, black or custom background, with your selected model picture.
 
+## Sensor setup
+
+Discover the sensors in ETHOS, then open **Configure widget → Sensor setup → Suggest sensors**. Review the matches, choose between alternatives and use **Apply... → Use suggestions** to save. Existing available selections are kept. [Step-by-step guide](docs/Configuration.md#sensor-setup).
+
 ## Install GasDeck
 
-Download [GasDeck-2026.10-v7.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v7/GasDeck-2026.10-v7.zip) from the release assets, not GitHub's automatic source archive. The same ZIP supports both methods:
+Download [GasDeck-2026.11-v1.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v1/GasDeck-2026.11-v1.zip) from the release assets, not GitHub's automatic source archive. The same ZIP supports both methods:
 
 - **FrSky Suite:** Connect the radio, open **Lua library**, choose **Install Lua scripts**, select the ZIP and click **Install scripts**.
 - **Manual:** Extract the ZIP, create `/scripts/GasDeck/` on the radio's script drive and copy all extracted files into it. The final Lua path is `/scripts/GasDeck/main.lua`.
@@ -72,7 +76,7 @@ On first installation, select **GasDeck** in a full-screen widget area. Follow t
 [TD SR18 / AES II walkthrough](docs/Configuration.md) or [norsk veiledning](docs/Konfigurasjon-norsk.md).
 Turn **Synthetic preview** off for live operation.
 Open **Configure widget** from the widget menu and check the version at the top.
-Suite displays this release as **26.10.7**.
+Suite displays this release as **26.11.1**.
 If Suite's installed entry has not refreshed, leave and reopen **Lua library**.
 If the widget still shows an older version after restarting, follow the
 [installation troubleshooting](docs/GasDeck.md#installation).

@@ -2,7 +2,7 @@
 
 [Home](../README.md) | [Norsk](Visningsgalleri-norsk.md) | [Configuration](Configuration.md)
 
-Genuine **800 × 480 captures from the X20RS simulator, ETHOS 26.1.2**, running stable GasDeck 2026.10-v7. Instruments and aircraft images are drawn by the app in the simulator. Telemetry values are controlled illustrations; no physical receiver or sensor was connected. The settings beneath each example explain how to configure that view.
+Genuine **800 × 480 captures from the X20RS simulator, ETHOS 26.1.2**, running stable GasDeck 2026.10-v7. Instruments and aircraft images are drawn by the app in the simulator. Telemetry values are controlled illustrations; no physical receiver or sensor was connected. The settings beneath each example explain how to configure that view. These layouts are retained in 2026.11-v1; see [Sensor setup](Configuration.md#sensor-setup) for the updated configuration screens.
 
 ## Deck and Digital, with and without a picture
 

@@ -2,7 +2,7 @@
 
 [Home](../README.md) | [English](Display-gallery.md) | [Oppsett](Konfigurasjon-norsk.md)
 
-Ekte **800 × 480 skjermopptak fra X20RS-simulatoren, ETHOS 26.1.2**, med stabil GasDeck 2026.10-v7. Instrumentene og modellbildene tegnes av appen i simulatoren. Telemetrien er kontrollerte illustrasjonsdata; det var ingen fysisk mottaker eller sensor tilkoblet. Valgene under hvert bilde forteller hvordan visningen settes opp.
+Ekte **800 × 480 skjermopptak fra X20RS-simulatoren, ETHOS 26.1.2**, med stabil GasDeck 2026.10-v7. Instrumentene og modellbildene tegnes av appen i simulatoren. Telemetrien er kontrollerte illustrasjonsdata; det var ingen fysisk mottaker eller sensor tilkoblet. Valgene under hvert bilde forteller hvordan visningen settes opp. Visningene beholdes i 2026.11-v1; se [Sensor setup](Konfigurasjon-norsk.md#sensor-setup) for de oppdaterte oppsettsskjermene.
 
 ## Deck og Digital, med og uten bilde
 

@@ -1,5 +1,11 @@
 # GasDeck change log
 
+## 2026.11-v1 - 2026-11-04
+
+- Sensor setup finds suitable sensors and lets you review and confirm the choices.
+- Supports two RX battery voltages with shared consumption, and suggests the matching battery and fuel-flow methods.
+- Improved handling of saved sensor selections and widget changes.
+
 
 ## 2026.10-v7 - release, 2026-10-24
 

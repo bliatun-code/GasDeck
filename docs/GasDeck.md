@@ -6,7 +6,7 @@
 
 ## Installation
 
-Download [GasDeck-2026.10-v7.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.10-v7/GasDeck-2026.10-v7.zip) from the release assets,
+Download [GasDeck-2026.11-v1.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v1/GasDeck-2026.11-v1.zip) from the release assets,
 not GitHub's automatic source archive. The same ZIP supports Suite and manual installation.
 
 - **FrSky Suite:** Connect the radio, open **Lua library**, choose **Install Lua scripts**, select the ZIP and click **Install scripts**. Suite installs the files into `/scripts/GasDeck/`.
@@ -26,7 +26,7 @@ Restart ETHOS after installation.
 On first installation, select **GasDeck** in a full-screen widget area and configure your model's sources,
 capacities and fuel method.
 Open **Configure widget** from the widget menu and check the version at the top.
-Suite displays this release as **26.10.7**.
+Suite displays this release as **26.11.1**.
 If Suite's installed entry has not refreshed, leave and reopen **Lua library**.
 
 If the widget still shows an older version after restarting, reconnect the radio,
