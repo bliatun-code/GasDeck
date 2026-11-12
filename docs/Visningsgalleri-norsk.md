@@ -2,7 +2,7 @@
 
 [Home](../README.md) | [English](Display-gallery.md) | [Oppsett](Konfigurasjon-norsk.md)
 
-Ekte **800 × 480 skjermopptak fra X20RS-simulatoren, ETHOS 26.1.2**, med stabil GasDeck 2026.10-v7. Instrumentene og modellbildene tegnes av appen i simulatoren. Telemetrien er kontrollerte illustrasjonsdata; det var ingen fysisk mottaker eller sensor tilkoblet. Valgene under hvert bilde forteller hvordan visningen settes opp. Visningene beholdes i 2026.11-v1; se [Sensor setup](Konfigurasjon-norsk.md#sensor-setup) for de oppdaterte oppsettsskjermene.
+Ekte **800 × 480 skjermopptak fra X20RS-simulatoren, ETHOS 26.1.2**, med stabil GasDeck 2026.10-v7. Instrumentene og modellbildene tegnes av appen i simulatoren. Telemetrien er kontrollerte illustrasjonsdata; det var ingen fysisk mottaker eller sensor tilkoblet. Valgene under hvert bilde forteller hvordan visningen settes opp. Visningene beholdes i 2026.11-v2; se [Sensor setup](Konfigurasjon-norsk.md#sensor-setup) for de oppdaterte oppsettsskjermene.
 
 ## Deck og Digital, med og uten bilde
 
@@ -30,7 +30,7 @@ Velg **Appearance > Display style = Deck / Digital** og deretter **Image source 
 </tr>
 </table>
 
-Hovedbildene bruker **Engine count = 1**, **RPM displays = 1**, **Temp displays = 2**, **RPM style = Retro LCD**, **Temperature unit = Celsius**, **Tank value from = Integrate flow** og **RX1/RX2 Remaining from = Consumed mAh**. Begge RX-batterier er **LiPo / 2 cells / 2500 mAh**, tanken er **1000 ml**, **Flow input units = Auto** (ml/min i dette eksemplet), kalibrering **100 %** og reserve **20 %**. **RF displays = 2** med VFR i prosent. Firemotorsbildene bytter til **Engine count/RPM displays/Temp displays = 4/4/4**, **Displacement = 20 cc** per motor og B-24-bilde; resten av oppsettet er det samme.
+Hovedbildene bruker **Engine count = 1**, **RPM displays = 1**, **Temp displays = 2**, **RPM style = Retro LCD**, **Temperature unit = Celsius**, **Tank value from = Integrate flow** og **RX1/RX2 Remaining from = Consumed mAh**. Begge RX-batterier er **LiPo / 2 cells / 2500 mAh**, tanken er **1000 ml**, **Flow input units = Auto** (ml/min i dette eksemplet), kalibrering **100 %** (begge under **Advanced settings**) og reserve **20 %**. **RF displays = 2** med VFR i prosent. Firemotorsbildene bytter til **Engine count/RPM displays/Temp displays = 4/4/4**, **Displacement = 20 cc** per motor og B-24-bilde; resten av oppsettet er det samme.
 
 ## Modell, verdier og telemetri
 
@@ -344,7 +344,7 @@ Valg: **Display style = Digital**; **Image source = Hidden**; **Engine count = 1
 
 ## Øvrige valg og kildeavhengigheter
 
-Dette galleriet dekker de ulike visningsvalgene; det er ikke alle kombinasjoner av egendefinerte farger, sensornavn og tallverdier. **Radio theme / Black / Custom**, egen aksentfarge og valgfri font kan tilpasses uavhengig. La Font file være tom for native ETHOS-fonter. Fullskjerm betyr hele LCD-flaten til radioen, også ved lavere oppløsning.
+Dette galleriet dekker de ulike visningsvalgene; det er ikke alle kombinasjoner av egendefinerte farger, sensornavn og tallverdier. **Radio theme / Black / Custom**, egen aksentfarge og valgfri font kan tilpasses uavhengig. La Font file (**Advanced settings**) være tom for native ETHOS-fonter. Fullskjerm betyr hele LCD-flaten til radioen, også ved lavere oppløsning.
 
 Hvert RX-batteri velges som **LiPo / LiFe**, med eget celletall og metode. Drivstoff kan beregnes fra **Capacity - consumed / Integrate flow / Remaining volume / Remaining percent**. Bruk **ml eller L** for volum og **ml/min, L/min eller ml/s** for flow etter kildens faktiske enhet; visningen bruker ml og ml/min. RF har 1–3 faktiske kilder. RPM-/temperaturgrenser, reservemengde, alarmer og flylogg er forklart i oppsettsguiden.
 

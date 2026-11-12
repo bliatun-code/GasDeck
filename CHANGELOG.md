@@ -1,5 +1,13 @@
 # GasDeck change log
 
+## 2026.11-v2 - 2026-11-13
+
+- GasDeck loads only for models that use it and frees its memory when you switch to another model. The flight count stays saved; last-flight statistics and graphs are cleared at the switch.
+- Configure widget opens with the everyday settings. Turn on **Advanced settings** and reopen Configure to change tuning, RF limits, input units and alert sounds.
+- The menu item **Accept RX counters...** is now called **Accept RX batteries...**.
+- Less background work while another screen is shown. Settings, sensors and flight counts are unchanged.
+- The package now has two Lua files: `main.lua` loads `deck.lua`. Copy both for manual installation.
+
 ## 2026.11-v1 - 2026-11-04
 
 - Sensor setup finds suitable sensors and lets you review and confirm the choices.

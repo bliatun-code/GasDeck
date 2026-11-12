@@ -19,6 +19,6 @@ The 320 x 180 aircraft PNG is optional documentation art; see [NOTICE](../../NOT
 
 Files beginning `native-` are current stable-app captures from the ETHOS 26.1.2 X20RS simulator at 800×480. Readings are controlled illustrative values. The [display gallery](../Display-gallery.md) and [norsk visningsgalleri](../Visningsgalleri-norsk.md) give the model, exact settings and required telemetry roles/units. Earlier session/acceptance walkthrough captures remain behavioral examples.
 
-## Sensor setup, 2026.11-v1
+## Sensor setup, 2026.11-v2
 
-The four `sensor-setup-*.png` images were captured again on 4 November 2026 using a clean example model in the native ETHOS 26.2.0 RC2 / X20RS simulator, running 2026.11-v1. They are unretouched 800 × 480 captures. Discovered example sensors illustrate staged suggestions, alternative RF choices and confirmation. No physical sensors were connected. Other images retain their stated original provenance.
+The four `sensor-setup-*.png` images were captured on 13 November 2026 using a clean example model in the native ETHOS 26.2.0 RC2 / X20RS simulator, running 2026.11-v2. They are unretouched 800 × 480 captures. The first shows the top of **Configure widget** with **Advanced settings**. Discovered example sensors illustrate staged suggestions, alternative RF choices and confirmation. No physical sensors were connected. Other images retain their stated original provenance.

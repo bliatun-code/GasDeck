@@ -2,9 +2,9 @@
 
 A full-screen receiver-power, gasoline-engine and fuel dashboard for FrSky ETHOS 1.6.6 and 26.1.2.
 
-**GasDeck 2026.11-v1: latest release. Physical radio testing passed.**
+**GasDeck 2026.11-v2: latest release. Physical radio testing passed.**
 
-[Download GasDeck-2026.11-v1.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v1/GasDeck-2026.11-v1.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.11-v1)
+[Download GasDeck-2026.11-v2.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v2/GasDeck-2026.11-v2.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.11-v2)
 
 <table>
 <tr>
@@ -24,7 +24,7 @@ Genuine X20RS / ETHOS 26.1.2 simulator captures of the current stable version, w
 [Illustrated configuration guide](docs/Configuration.md) |
 [Norsk veiledning](docs/Konfigurasjon-norsk.md) |
 [Installation and usage](docs/GasDeck.md) |
-[Lua source](scripts/GasDeck/main.lua)
+[Lua source](scripts/GasDeck/deck.lua)
 
 Large twin-cylinder acro: one 120 cc engine, one RPM source and two CHT probes. The four-engine example uses matching B-24 artwork. See the gallery for exact program choices, source roles and units.
 
@@ -58,6 +58,8 @@ Changing style or image does not change calculation methods, telemetry sources, 
 - Configurable reserve, separate low-fuel/RX WAV files and a repeat interval.
 - Ignition ON/OFF/unknown; source-named RSSI/VFR and 1-3 actual RF sources.
 - Per-model counter, retained last flight and optional delayed automatic log opening.
+- Configure opens with the everyday settings; **Advanced settings** shows the tuning fields.
+- Loads only for models that use GasDeck and is released again when you switch to a model without it.
 - Radio theme, black or custom background, with your selected model picture.
 
 ## Sensor setup
@@ -66,17 +68,17 @@ Discover the sensors in ETHOS, then open **Configure widget → Sensor setup →
 
 ## Install GasDeck
 
-Download [GasDeck-2026.11-v1.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v1/GasDeck-2026.11-v1.zip) from the release assets, not GitHub's automatic source archive. The same ZIP supports both methods:
+Download [GasDeck-2026.11-v2.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v2/GasDeck-2026.11-v2.zip) from the release assets, not GitHub's automatic source archive. The same ZIP supports both methods:
 
 - **FrSky Suite:** Connect the radio, open **Lua library**, choose **Install Lua scripts**, select the ZIP and click **Install scripts**.
-- **Manual:** Extract the ZIP, create `/scripts/GasDeck/` on the radio's script drive and copy all extracted files into it. The final Lua path is `/scripts/GasDeck/main.lua`.
+- **Manual:** Extract the ZIP, create `/scripts/GasDeck/` on the radio's script drive and copy all six extracted files into it. `main.lua` only loads `deck.lua`; both files are required.
 
 Restart ETHOS after installation.
 On first installation, select **GasDeck** in a full-screen widget area. Follow the
 [TD SR18 / AES II walkthrough](docs/Configuration.md) or [norsk veiledning](docs/Konfigurasjon-norsk.md).
 Turn **Synthetic preview** off for live operation.
 Open **Configure widget** from the widget menu and check the version at the top.
-Suite displays this release as **26.11.1**.
+Suite displays this release as **26.11.2**.
 If Suite's installed entry has not refreshed, leave and reopen **Lua library**.
 If the widget still shows an older version after restarting, follow the
 [installation troubleshooting](docs/GasDeck.md#installation).
@@ -103,7 +105,7 @@ Gasoline sorties can retain receiver batteries between flights. Confirm an actua
 model off or ignition ON; a qualified active flight blocks it. Loss of both RX feeds for
 **Power loss delay** also ends the session; RF failure can resemble disconnected power.
 The last qualified log remains until a new flight qualifies. Only the counter survives
-radio restart; graphs/summary stay in RAM. Automatic log opening defaults Off.
+a radio restart or model switch; graphs/summary stay in RAM. Automatic log opening defaults Off.
 
 Open **Flight log** from the five-choice Home menu. Its bottom-right **Diagnostics**
 button shows the logging conditions, even with no recorded flight. **RTN** returns

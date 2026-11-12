@@ -36,6 +36,10 @@ Earlier menu and Appearance pictures below remain field references. The new Sens
 </tr>
 </table>
 
+## Advanced settings
+
+**Configure widget** opens with the everyday settings. Turn on **Advanced settings** at the top and reopen Configure to show tuning fields such as thresholds, delays, scales, input units and alert sounds. Hidden fields keep their values and continue to work. The switch returns to OFF after a restart. Fields marked **(Advanced settings)** below appear only when it is on.
+
 ## Sensor setup
 
 Discover the model's sensors in **ETHOS → Telemetry** first. Open **Configure widget → Sensor setup**.
@@ -55,7 +59,7 @@ Sensor setup does not create calculated sensors. If consumed mAh is missing, cre
 <tr><td><img src="images/sensor-setup-choices.png" alt="Choice between matching radio-link sensors"><br><b>Choose between alternatives</b></td><td><img src="images/sensor-setup-confirm.png" alt="Confirmation before saving"><br><b>Confirm before saving</b></td></tr>
 </table>
 
-These new menu captures show GasDeck 2026.11-v1 in the ETHOS 26.2.0 RC2 X20RS simulator with example sensors. Names and match counts depend on your model.
+These menu captures show GasDeck 2026.11-v2 in the ETHOS 26.2.0 RC2 X20RS simulator with example sensors. Names and match counts depend on your model.
 
 ## 1. Appearance
 
@@ -75,7 +79,7 @@ Changing style or image does not change calculation methods, telemetry sources, 
 Enter your engine's **Engine brand**, **Displacement** and **Engine count**.
 For this single-engine example, use **Engine count = 1**.
 Keep **Image source = Selected model** to use the active ETHOS model's picture.
-Leave **Font file** blank for the radio's built-in fonts.
+Leave **Font file** (Advanced settings) blank for the radio's built-in fonts.
 
 ## 2. RX battery 1, then RX battery 2
 
@@ -104,7 +108,7 @@ The combined **RxCurrent** belongs in the next section.
 | RX total current | RxCurrent — A |
 | RX total consumed | Your calculated Consumption sensor, for example RxConsuption — mAh |
 | Ignition status | Your ignition switch, channel or actual status source |
-| Ignition ON above | Usually 0; verify that both ON and OFF display correctly |
+| Ignition ON above (Advanced settings) | Usually 0; verify that both ON and OFF display correctly |
 | TX voltage | Your transmitter battery source, or leave blank for the built-in source |
 
 **RxConsuption** is a user-created sensor name, not a separate factory measurement.
@@ -141,7 +145,7 @@ was missing. See [ETHOS Consumption sensors](https://ethos-doc.frsky-rc.com/mode
 **Temp 1** means the first display slot; it can show AES temperature input 5.
 Choose the connected sensor that gives a plausible temperature.
 Set **RPM scale max**, **RPM red zone**, **Temp warning** and **Temp critical** for
-your engine. These display limits do not control the engine.
+your engine under **Advanced settings**. These display limits do not control the engine.
 
 ![One RPM and one temperature display](images/gasdeck-setup-engine.png)
 
@@ -155,13 +159,13 @@ your engine. These display limits do not control the engine.
 | Tank capacity | Actual tank volume in ml |
 | Refill amount | Fuel in the tank after filling; for full tank, use Tank capacity |
 | Flow source | AES flow — ml/min |
-| Flow input units | Auto when the sensor reports ml/min (ETHOS may label it ml/m) |
-| Flow calibration | 100% initially; adjust after checking measured consumption |
+| Flow input units (Advanced settings) | Auto when the sensor reports ml/min (ETHOS may label it ml/m) |
+| Flow calibration (Advanced settings) | 100% initially; adjust after checking measured consumption |
 | Reserve / warning | Your chosen reserve, for example 20% |
 
 Use **AES flow**, the current flow rate. **AES avg. flow** and **AES max flow** are
 different readings and should not drive integration.
-**Fuel used source**, **Remaining source** and **Volume input units** are inactive
+**Fuel used source**, **Remaining source** and **Volume input units** (Advanced settings) are inactive
 for **Integrate flow**.
 
 ![Integrate flow settings](images/gasdeck-setup-fuel.png)
@@ -184,11 +188,11 @@ restart. Refuel does not reset the AES or any telemetry sensor.
 
 ## 6. Alerts
 
-Choose **Low fuel alert**, **Low RX alert** and the **Repeat interval** you want.
-**Alert RX estimate** defaults Off; enable it deliberately for this voltage-based
+Choose **Low fuel alert** and **Low RX alert**. Under **Advanced settings**, set the
+**Repeat interval** you want. **Alert RX estimate** (Advanced settings) defaults Off; enable it deliberately for this voltage-based
 battery setup. Fuel alerts use **Reserve / warning**; RX alerts use 30%.
 
-For spoken alerts, select **Audio folder**, **Fuel WAV** and **RX battery WAV**.
+For spoken alerts, select **Audio folder**, **Fuel WAV** and **RX battery WAV** under **Advanced settings**.
 No sounds are bundled. Missing or invalid files use a tone.
 
 ## 7. RF sources / limits
@@ -197,10 +201,11 @@ No sounds are bundled. Missing or invalid files use a tone.
 | --- | --- |
 | RF displays | 2 |
 | RF 1 source | RSSI 2.4G — dB |
-| RF 1 profile | ACCESS / TD / TW |
+| RF 1 profile (Advanced settings) | ACCESS / TD / TW |
 | RF 2 source | RSSI 900M — dB |
-| RF 2 profile | ACCESS / TD / TW |
+| RF 2 profile (Advanced settings) | ACCESS / TD / TW |
 
+**RF n profile**, **Log RF n source**, the RSSI scale and RF thresholds are under **Advanced settings**.
 Leave **Log RF 1 source / Log RF 2 source** blank to graph the selected RSSI sources.
 Alternatively select **VFR 2.4G / VFR 900M** to graph valid-frame rate in **%**.
 RSSI signal strength and VFR frame delivery are separate measurements.
@@ -212,10 +217,10 @@ RSSI signal strength and VFR frame delivery are separate measurements.
 Leave **Enable log** Off if you only want the dashboard.
 To count flights, enable it and select **Throttle source**; the **Ignition status**
 selected earlier is the flight gate. Check raw throttle endpoints in
-**Flight log > Diagnostics** before setting **Throttle low/high (raw)**.
+**Flight log > Diagnostics** before setting **Throttle low/high (raw)** (Advanced settings).
 
 Default qualification needs 60 seconds and at least 5 seconds above 50% normalized
-throttle. Set **Airborne gate** only if you have a suitable source.
+throttle; these limits are under **Advanced settings**. Set **Airborne gate** only if you have a suitable source.
 Blank **Power loss source** uses either valid positive RX voltage.
 Valid ignition OFF ends the session and retains a qualified log. The next ON
 starts a new qualification; an unqualified start does not add a flight or replace
@@ -237,7 +242,7 @@ With the model on, check both battery voltages, combined RX current/consumption,
 RPM, temperature, live flow and RF readings. Confirm Refuel after filling and check
 that the fuel amount matches **Refill amount** when a valid flow reading is available.
 
-## Advanced reference
+## Reference
 
 ### Battery methods and sensor type
 
@@ -263,7 +268,7 @@ See [ETHOS Percent sensors](https://ethos-doc.frsky-rc.com/model-setup/telemetry
 
 After an unexpected individual consumption-counter reset, check actual charge and
 the mAh readings. Exit preview, confirm valid ignition OFF and choose
-**Accept RX counters... > Confirm**. It accepts both readings without resetting
+**Accept RX batteries... > Confirm**. It accepts both readings without resetting
 sensors, setting charge to 100%, changing the flight count or refuelling.
 Missing or invalid readings remain unknown.
 
@@ -332,9 +337,9 @@ connected. A qualified log is retained once; the next ignition ON starts a new
 qualification. Unknown ignition pauses rather than ends it. Use Refuel after
 actually filling the tank.
 
-Power loss delay defaults to 10 seconds (3–120). One missing RX feed does not finish
+Power loss delay defaults to 10 seconds (3–120, Advanced settings). One missing RX feed does not finish
 the session while the other remains valid. Extended RF loss may resemble power loss.
-Optional **Auto-open log** opens a qualified log after **Extra log delay** (default
+Optional **Auto-open log** opens a qualified log after **Extra log delay** (Advanced settings, default
 5 seconds) following ignition OFF. If power loss ends the session instead, it waits
 **Power loss delay** plus that extra delay. Ignition ON, returning power after a
 power-loss completion or manual view/settings changes cancel it. Refuel does not
@@ -350,7 +355,7 @@ without changing the count or recorded log.
 **Reset flight count** is per model; finish the session with valid OFF first.
 The widget shows ignition status and never switches ignition or throttle.
 
-Settings and count are saved per model; detailed logs and graphs clear on radio restart.
+Settings and count are saved per model; detailed logs and graphs clear on radio restart or model switch.
 Back up the SD card and model together, and check sources if you copy a model.
 
 ### Home menu and navigation
@@ -361,7 +366,7 @@ The short-press **Home** menu contains five choices, all visible without scrolli
 | --- | --- |
 | Flight log / Dashboard | Switches between dashboard and flight log. |
 | Refuel... | Confirms the loaded fuel amount for a widget-managed estimate. |
-| Accept RX counters... | Reviews an unexpected consumption-counter reset; requires valid ignition OFF. |
+| Accept RX batteries... | Reviews an unexpected consumption-counter reset; requires valid ignition OFF. |
 | Configure widget | Opens the setup groups above, including Reset live peaks in Flight session. |
 | Configure screens | Opens ETHOS's screen configuration. |
 

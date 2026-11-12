@@ -2,7 +2,7 @@
 
 [Home](../README.md) | [Norsk](Visningsgalleri-norsk.md) | [Configuration](Configuration.md)
 
-Genuine **800 × 480 captures from the X20RS simulator, ETHOS 26.1.2**, running stable GasDeck 2026.10-v7. Instruments and aircraft images are drawn by the app in the simulator. Telemetry values are controlled illustrations; no physical receiver or sensor was connected. The settings beneath each example explain how to configure that view. These layouts are retained in 2026.11-v1; see [Sensor setup](Configuration.md#sensor-setup) for the updated configuration screens.
+Genuine **800 × 480 captures from the X20RS simulator, ETHOS 26.1.2**, running stable GasDeck 2026.10-v7. Instruments and aircraft images are drawn by the app in the simulator. Telemetry values are controlled illustrations; no physical receiver or sensor was connected. The settings beneath each example explain how to configure that view. These layouts are retained in 2026.11-v2; see [Sensor setup](Configuration.md#sensor-setup) for the updated configuration screens.
 
 ## Deck and Digital, with and without a picture
 
@@ -30,7 +30,7 @@ Open the widget menu and choose **Configure widget > Appearance**. **Display sty
 </tr>
 </table>
 
-The main views use **Engine count = 1**, **RPM displays = 1**, **Temp displays = 2**, **RPM style = Retro LCD**, **Temperature unit = Celsius**, **Tank value from = Integrate flow** and **RX1/RX2 Remaining from = Consumed mAh**. Both RX packs are **LiPo / 2 cells / 2500 mAh**, tank capacity is **1000 ml**, **Flow input units = Auto** (ml/min in this example), calibration **100%** and reserve **20%**. **RF displays = 2** with VFR in percent. The four-engine views change to **Engine count/RPM displays/Temp displays = 4/4/4**, **Displacement = 20 cc** per engine and B-24 artwork; the other settings remain the same.
+The main views use **Engine count = 1**, **RPM displays = 1**, **Temp displays = 2**, **RPM style = Retro LCD**, **Temperature unit = Celsius**, **Tank value from = Integrate flow** and **RX1/RX2 Remaining from = Consumed mAh**. Both RX packs are **LiPo / 2 cells / 2500 mAh**, tank capacity is **1000 ml**, **Flow input units = Auto** (ml/min in this example), calibration **100%** (both under **Advanced settings**) and reserve **20%**. **RF displays = 2** with VFR in percent. The four-engine views change to **Engine count/RPM displays/Temp displays = 4/4/4**, **Displacement = 20 cc** per engine and B-24 artwork; the other settings remain the same.
 
 ## Aircraft, readings and telemetry
 
@@ -344,7 +344,7 @@ Settings: **Display style = Digital**; **Image source = Hidden**; **Engine count
 
 ## Other choices and source dependencies
 
-This gallery covers the distinct display choices, rather than every combination of arbitrary colors, sensor names and readings. **Radio theme / Black / Custom**, an accent color and optional font can be set independently. Leave Font file blank for native ETHOS fonts. Full screen means the radio’s complete LCD, including at a lower resolution.
+This gallery covers the distinct display choices, rather than every combination of arbitrary colors, sensor names and readings. **Radio theme / Black / Custom**, an accent color and optional font can be set independently. Leave Font file (**Advanced settings**) blank for native ETHOS fonts. Full screen means the radio’s complete LCD, including at a lower resolution.
 
 Each RX battery has **LiPo / LiFe**, its own cell count and method. Fuel methods are **Capacity - consumed / Integrate flow / Remaining volume / Remaining percent**. Match **ml or L** volume and **ml/min, L/min or ml/s** flow inputs to the actual source; the display uses ml and ml/min. RF has 1–3 actual sources. RPM/temperature limits, reserve, alerts and flight logging are covered in the configuration guide.
 

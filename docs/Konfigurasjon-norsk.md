@@ -8,11 +8,11 @@ Last ned den navngitte GasDeck-ZIP-pakken fra [release-siden](https://github.com
 Samme ZIP brukes til begge installasjonsmåtene:
 
 - **FrSky Suite:** Koble til radioen, åpne **Lua library**, velg **Install Lua scripts**, velg ZIP-filen og trykk **Install scripts**.
-- **Manuelt:** Pakk ut ZIP-filen, opprett `/scripts/GasDeck/` på radioens skriptdisk og kopier alle de fem utpakkede filene dit. Lua-filen skal ligge som `/scripts/GasDeck/main.lua`.
+- **Manuelt:** Pakk ut ZIP-filen, opprett `/scripts/GasDeck/` på radioens skriptdisk og kopier alle de seks utpakkede filene dit. `main.lua` laster bare `deck.lua`; begge filene må være med.
 
 Start ETHOS på nytt etter installasjonen. Ved første installasjon velger du
 **GasDeck** i et fullskjerms widgetfelt. Åpne **Configure widget** fra widgetmenyen
-og kontroller versjonen øverst. Suite viser denne versjonen som **26.11.1**.
+og kontroller versjonen øverst. Suite viser denne versjonen som **26.11.2**.
 Hvis installasjonen ikke vises oppdatert i Suite, gå ut av og inn i **Lua library**.
 Viser widgeten fortsatt en eldre versjon etter omstart, koble til radioen igjen,
 fjern bare `/scripts/GasDeck/main.luac` og start ETHOS på nytt.
@@ -45,6 +45,10 @@ Eldre bilder av widgetmenyen og Appearance er fortsatt feltreferanser. De nye Se
 </tr>
 </table>
 
+## Advanced settings
+
+**Configure widget** åpner med de vanlige innstillingene. Slå på **Advanced settings** øverst og åpne Configure på nytt for å se finjusteringer som terskler, forsinkelser, skalaer, inngangsenheter og varsellyder. Skjulte felt beholder verdien og virker som før. Bryteren går tilbake til OFF etter omstart. Felt merket **(Advanced settings)** nedenfor vises bare når den er på.
+
 ## Sensor setup
 
 Oppdag modellens sensorer i **ETHOS → Telemetry** først. Åpne **Configure widget → Sensor setup**.
@@ -64,7 +68,7 @@ Sensor setup oppretter ikke beregnede sensorer. Mangler consumed mAh, opprett en
 <tr><td><img src="images/sensor-setup-choices.png" alt="Valg mellom passende radiosignalkilder"><br><b>Velg mellom flere treff</b></td><td><img src="images/sensor-setup-confirm.png" alt="Bekreftelse før lagring"><br><b>Bekreft før lagring</b></td></tr>
 </table>
 
-De nye menybildene viser GasDeck 2026.11-v1 i ETHOS 26.2.0 RC2-simulatoren for X20RS med eksempelsensorer. Navn og antall treff avhenger av modellen din.
+Menybildene viser GasDeck 2026.11-v2 i ETHOS 26.2.0 RC2-simulatoren for X20RS med eksempelsensorer. Navn og antall treff avhenger av modellen din.
 
 ## 1. Appearance
 
@@ -84,7 +88,7 @@ Stil- og bildevalg endrer ikke beregningsmetoder, telemetrikilder, enheter, vars
 Angi motorens **Engine brand**, **Displacement** og **Engine count**.
 For dette eksemplet med én motor velger du **Engine count = 1**.
 Behold **Image source = Selected model** for å bruke bildet til den aktive ETHOS-modellen.
-La **Font file** stå tomt for radioens innebygde fonter.
+La **Font file** (Advanced settings) stå tomt for radioens innebygde fonter.
 
 ## 2. RX battery 1, deretter RX battery 2
 
@@ -113,7 +117,7 @@ Samlet **RxCurrent** velges i neste avsnitt.
 | RX total current | RxCurrent — A |
 | RX total consumed | Egen kalkulert Consumption-sensor, for eksempel RxConsuption — mAh |
 | Ignition status | Tenningsbryteren, kanalen eller en faktisk statuskilde |
-| Ignition ON above | Vanligvis 0; kontroller at både ON og OFF vises riktig |
+| Ignition ON above (Advanced settings) | Vanligvis 0; kontroller at både ON og OFF vises riktig |
 | TX voltage | Radioens batterikilde, eller tomt felt for innebygd kilde |
 
 **RxConsuption** er et navn på en sensor du oppretter, ikke en egen fabrikkmåling.
@@ -150,7 +154,7 @@ Se [ETHOS' Consumption-sensorer](https://ethos-doc.frsky-rc.com/model-setup/tele
 **Temp 1** er første visningsfelt og kan vise AES-temperaturinngang 5.
 Velg den tilkoblede sensoren som viser en rimelig temperatur.
 Tilpass **RPM scale max**, **RPM red zone**, **Temp warning** og **Temp critical**
-til motoren. Disse visningsgrensene styrer ikke motoren.
+til motoren under **Advanced settings**. Disse visningsgrensene styrer ikke motoren.
 
 ![Én RPM- og én temperaturvisning](images/gasdeck-setup-engine.png)
 
@@ -164,8 +168,8 @@ til motoren. Disse visningsgrensene styrer ikke motoren.
 | Tank capacity | Faktisk tankvolum i ml |
 | Refill amount | Drivstoff i tanken etter fylling; ved full tank brukes Tank capacity |
 | Flow source | AES flow — ml/min |
-| Flow input units | Auto når sensoren viser ml/min (ETHOS kan skrive ml/m) |
-| Flow calibration | 100 % til å begynne med; juster etter kontroll mot målt forbruk |
+| Flow input units (Advanced settings) | Auto når sensoren viser ml/min (ETHOS kan skrive ml/m) |
+| Flow calibration (Advanced settings) | 100 % til å begynne med; juster etter kontroll mot målt forbruk |
 | Reserve / warning | Ønsket reserve, for eksempel 20 % |
 
 Bruk **AES flow**, som er aktuell flow. **AES avg. flow** og **AES max flow** er
@@ -193,11 +197,11 @@ Refuel nullstiller ikke AES eller andre telemetrisensorer.
 
 ## 6. Alerts
 
-Velg **Low fuel alert**, **Low RX alert** og ønsket **Repeat interval**.
-**Alert RX estimate** er normalt av; slå det på bevisst for dette oppsettet med
+Velg **Low fuel alert** og **Low RX alert**. Under **Advanced settings** setter du ønsket
+**Repeat interval**. **Alert RX estimate** (Advanced settings) er normalt av; slå det på bevisst for dette oppsettet med
 spenningsestimat. Drivstoffvarsler følger **Reserve / warning**; RX-varsler bruker 30 %.
 
-For talevarsler velger du **Audio folder**, **Fuel WAV** og **RX battery WAV**.
+For talevarsler velger du **Audio folder**, **Fuel WAV** og **RX battery WAV** under **Advanced settings**.
 Ingen lyder følger pakken. Manglende eller ugyldig fil gir tone.
 
 ## 7. RF sources / limits
@@ -206,10 +210,11 @@ Ingen lyder følger pakken. Manglende eller ugyldig fil gir tone.
 | --- | --- |
 | RF displays | 2 |
 | RF 1 source | RSSI 2.4G — dB |
-| RF 1 profile | ACCESS / TD / TW |
+| RF 1 profile (Advanced settings) | ACCESS / TD / TW |
 | RF 2 source | RSSI 900M — dB |
-| RF 2 profile | ACCESS / TD / TW |
+| RF 2 profile (Advanced settings) | ACCESS / TD / TW |
 
+**RF n profile**, **Log RF n source**, RSSI-skalaen og RF-grensene ligger under **Advanced settings**.
 La **Log RF 1 source / Log RF 2 source** stå tomme for å tegne de valgte RSSI-kildene.
 Du kan i stedet velge **VFR 2.4G / VFR 900M** for å tegne gyldig rammerate i **%**.
 RSSI-signalstyrke og VFR-rammelevering er forskjellige målinger.
@@ -221,7 +226,7 @@ RSSI-signalstyrke og VFR-rammelevering er forskjellige målinger.
 La **Enable log** stå Off hvis du bare ønsker instrumentvisningen.
 For flytelling slår du det på og velger **Throttle source**; tidligere valgt
 **Ignition status** er flygingens tenningsvilkår. Kontroller rå gassverdier i
-**Flight log > Diagnostics** før du setter **Throttle low/high (raw)**.
+**Flight log > Diagnostics** før du setter **Throttle low/high (raw)** (Advanced settings).
 
 Standardkravene er 60 sekunder og minst 5 sekunder over 50 % normalisert gass.
 Velg **Airborne gate** bare hvis du har en egnet kilde.
@@ -246,7 +251,7 @@ Med modellen på kontrollerer du begge batterispenningene, samlet RX-strøm/forb
 RPM, temperatur, aktuell flow og RF-målinger. Bekreft Refuel etter fylling og
 kontroller at drivstoffmengden tilsvarer **Refill amount** når gyldig flow er tilgjengelig.
 
-## Avansert referanse
+## Referanse
 
 ### Batterimetoder og sensortype
 
@@ -272,7 +277,7 @@ Se [ETHOS' Percent-sensorer](https://ethos-doc.frsky-rc.com/model-setup/telemetr
 
 Ved uventet nullstilling av individuell forbruksteller: kontroller faktisk lading
 og mAh-avlesningene. Slå av preview, bekreft gyldig tenning OFF og velg
-**Accept RX counters... > Confirm**. Det aksepterer begge avlesningene uten å
+**Accept RX batteries... > Confirm**. Det aksepterer begge avlesningene uten å
 nullstille sensorene, sette kapasitet til 100 %, endre flytelleren eller fylle tanken.
 Manglende eller ugyldige målinger forblir ukjente.
 
@@ -358,7 +363,7 @@ uten å endre telleren eller registrert logg.
 Widgeten viser tenningsstatus og styrer aldri tenning eller gass.
 
 Innstillinger og flyteller lagres per modell; detaljerte logger og grafer tømmes
-ved radioomstart. Ta sikkerhetskopi av SD-kort og modell sammen, og kontroller
+ved radioomstart eller modellbytte. Ta sikkerhetskopi av SD-kort og modell sammen, og kontroller
 kildene hvis du kopierer en modell.
 
 ### Home-meny og navigasjon
@@ -369,7 +374,7 @@ Home-menyen ved korttrykk har fem valg som vises uten scrolling:
 | --- | --- |
 | Flight log / Dashboard | Bytter mellom hovedvisning og flylogg. |
 | Refuel... | Bekrefter fylt drivstoffmengde for et estimat som widgeten beregner. |
-| Accept RX counters... | Gjennomgår uventet reset av forbruksteller; krever gyldig tenning OFF. |
+| Accept RX batteries... | Gjennomgår uventet reset av forbruksteller; krever gyldig tenning OFF. |
 | Configure widget | Åpner gruppene ovenfor, inkludert Reset live peaks i Flight session. |
 | Configure screens | Åpner ETHOS' skjermkonfigurasjon. |
 

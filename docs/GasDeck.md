@@ -6,16 +6,17 @@
 
 ## Installation
 
-Download [GasDeck-2026.11-v1.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v1/GasDeck-2026.11-v1.zip) from the release assets,
+Download [GasDeck-2026.11-v2.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v2/GasDeck-2026.11-v2.zip) from the release assets,
 not GitHub's automatic source archive. The same ZIP supports Suite and manual installation.
 
 - **FrSky Suite:** Connect the radio, open **Lua library**, choose **Install Lua scripts**, select the ZIP and click **Install scripts**. Suite installs the files into `/scripts/GasDeck/`.
-- **Manual:** Extract the ZIP, create `/scripts/GasDeck/` on the radio's script drive and copy all five extracted files into it:
+- **Manual:** Extract the ZIP, create `/scripts/GasDeck/` on the radio's script drive and copy all six extracted files into it. `main.lua` only loads `deck.lua`; both files are required:
 
 ```text
 scripts/
   GasDeck/
     main.lua
+    deck.lua
     ethos_lua_manifest.json
     INSTALL.txt
     LICENSE
@@ -26,7 +27,7 @@ Restart ETHOS after installation.
 On first installation, select **GasDeck** in a full-screen widget area and configure your model's sources,
 capacities and fuel method.
 Open **Configure widget** from the widget menu and check the version at the top.
-Suite displays this release as **26.11.1**.
+Suite displays this release as **26.11.2**.
 If Suite's installed entry has not refreshed, leave and reopen **Lua library**.
 
 If the widget still shows an older version after restarting, reconnect the radio,
@@ -83,7 +84,7 @@ Do not reset it on ignition changes or RF loss. Combined consumption cannot iden
 each pack's use; do not halve it or assign it to both batteries.
 Follow the [step-by-step recipe](Configuration.md#if-consumed-mah-is-missing).
 
-For other battery/fuel methods, see the [advanced reference](Configuration.md#advanced-reference).
+For other battery/fuel methods, see the [advanced reference](Configuration.md#reference).
 AES remaining-volume/percent sources need their own tank/reset setup; GasDeck Refuel
 does not change those external readings.
 Consult the [FrSky AES II manual](https://www.flyingtech.co.uk/wp-content/uploads/2024/05/Advanced-Engine-Suite-II-Manual.pdf)
@@ -104,7 +105,7 @@ receiver power, safety switches or failsafe. Keep native alerts and physical saf
 
 If an RX consumption counter unexpectedly falls, check the battery's charge and
 the current mAh reading. Exit preview and confirm ignition OFF, then choose
-**Accept RX counters...** in the widget menu. This accepts both RX readings;
+**Accept RX batteries...** in the widget menu. This accepts both RX readings;
 it does not reset the sensors, flight count or fuel estimate.
 
 ## Model image and fonts
@@ -116,7 +117,7 @@ An 800 x 480 image exceeds the widget's image-size limit.
 Use ETHOS-compatible RGB/RGBA 8-bit PNG, not palette/16-bit PNG.
 Large image dimensions can use too much radio memory even when the PNG file is small.
 The example artwork is optional; you can use your model's own picture.
-Leave **Font file** blank to use the radio's native fonts.
+Leave **Font file** (Advanced settings) blank to use the radio's native fonts.
 
 ## Flight logs and model settings
 
@@ -135,8 +136,9 @@ earlier consumption cannot be recovered. Direct remaining sensors are not change
 See [Refuel and data gaps](Configuration.md#refuel-and-data-gaps).
 
 The last qualified log stays visible after aircraft shutdown and while the next
-flight qualifies. Radio restart clears its statistics and graphs; the flight count
-is saved for each model. Graphs retain brief signal drops and show gaps when readings
+flight qualifies. A radio restart or model switch clears its statistics and graphs; the flight count
+is saved for each model. GasDeck loads only for models that use it and is released
+again when you switch to a model without it. Graphs retain brief signal drops and show gaps when readings
 are missing. Live traces can take a few seconds to update.
 
 Choose **Flight log** from the five-choice Home menu. **Diagnostics** is the button
