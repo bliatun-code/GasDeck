@@ -2,9 +2,9 @@
 
 A full-screen receiver-power, gasoline-engine and fuel dashboard for FrSky ETHOS 1.6.6 and 26.1.2.
 
-**GasDeck 2026.11-v2: latest release. Physical radio testing passed.**
+**GasDeck 2026.11-v3: latest release. Physical radio testing passed.**
 
-[Download GasDeck-2026.11-v2.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v2/GasDeck-2026.11-v2.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.11-v2)
+[Download GasDeck-2026.11-v3.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v3/GasDeck-2026.11-v3.zip) | [Release notes](https://github.com/bliatun-code/GasDeck/releases/tag/gasdeck-2026.11-v3)
 
 <table>
 <tr>
@@ -68,7 +68,7 @@ Discover the sensors in ETHOS, then open **Configure widget → Sensor setup →
 
 ## Install GasDeck
 
-Download [GasDeck-2026.11-v2.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v2/GasDeck-2026.11-v2.zip) from the release assets, not GitHub's automatic source archive. The same ZIP supports both methods:
+Download [GasDeck-2026.11-v3.zip](https://github.com/bliatun-code/GasDeck/releases/download/gasdeck-2026.11-v3/GasDeck-2026.11-v3.zip) from the release assets, not GitHub's automatic source archive. The same ZIP supports both methods:
 
 - **FrSky Suite:** Connect the radio, open **Lua library**, choose **Install Lua scripts**, select the ZIP and click **Install scripts**.
 - **Manual:** Extract the ZIP, create `/scripts/GasDeck/` on the radio's script drive and copy all six extracted files into it. `main.lua` only loads `deck.lua`; both files are required.
@@ -78,7 +78,7 @@ On first installation, select **GasDeck** in a full-screen widget area. Follow t
 [TD SR18 / AES II walkthrough](docs/Configuration.md) or [norsk veiledning](docs/Konfigurasjon-norsk.md).
 Turn **Synthetic preview** off for live operation.
 Open **Configure widget** from the widget menu and check the version at the top.
-Suite displays this release as **26.11.2**.
+Suite displays this release as **26.11.3**.
 If Suite's installed entry has not refreshed, leave and reopen **Lua library**.
 If the widget still shows an older version after restarting, follow the
 [installation troubleshooting](docs/GasDeck.md#installation).

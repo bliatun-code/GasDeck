@@ -37,6 +37,23 @@ function FormLifecycle.buildModel(owner, identity)
     if owner._deckFormBuilding and owner._deckFormReleases then return owner._deckFormModel end
     return identity()
 end
+-- ETHOS can keep menu and dialog functions after they close. Under the small loader
+-- they become relays that let go of this file when it is released. Menu rows reuse
+-- one relay per position; each dialog button gets its own and closes once released.
+function FormLifecycle.relay(list, menu)
+    local relay = FormLifecycle.loader and FormLifecycle.loader.relay
+    if type(relay) == "function" and type(list) == "table" then
+        for index, item in ipairs(list) do
+            if menu then item[2] = relay(item[2], nil, index)
+            else item.action = relay(item.action, true) end
+        end
+    end
+    return list
+end
+function FormLifecycle.openDialog(options)
+    FormLifecycle.relay(options.buttons)
+    return form.openDialog(options)
+end
 function FormLifecycle.configure(owner, build, valid)
     if not valid(owner) then return end
     FormLifecycle.release(owner)
@@ -383,7 +400,7 @@ function SensorSetup.add(owner, panel, rows, current, sourceFor, apply, consumpt
             seen[member]=true
         end
         pending=selections
-        form.openDialog({title="Use sensor suggestions?",message=string.format(
+        FormLifecycle.openDialog({title="Use sensor suggestions?",message=string.format(
             "Save %d selected sources. %s",#selections,methodMessage
                 or "Unavailable sources are replaced only if you chose a replacement."),
             buttons={{label="Cancel",action=function() pending=nil;return true end},
@@ -458,7 +475,7 @@ function SensorSetup.add(owner, panel, rows, current, sourceFor, apply, consumpt
     end)
 end
 local RenderLCD = lcd
-local VERSION = "2026.11-v2"
+local VERSION = "2026.11-v3"
 local MAX_IMAGE_PIXELS, BITMAP_RESERVE = 160000, 65536
 local FLIGHT_SESSION
 local HISTORY_POINTS, GRAPH_BINS = 180, 48
@@ -3471,7 +3488,7 @@ local function colorField(widget,label,key)
     form.addColorField(line,nil,function() return widget and widget[key] or 0 end,function(value) if not FormLifecycle.current(widget,generation,formModel,modelKey,validWidget) then return end; widget[key]=value;changed(widget) end)
 end
 showProblem=function(message)
-    form.openDialog({title="GasDeck",message=message,buttons={{label="OK",action=function() return true end}}})
+    FormLifecycle.openDialog({title="GasDeck",message=message,buttons={{label="OK",action=function() return true end}}})
 end
 local function askAction(widget,action,title,message,guard)
     if not validWidget(widget) then return end
@@ -3480,7 +3497,7 @@ local function askAction(widget,action,title,message,guard)
     if not safe then showProblem(problem);return end
     local key=modelKey()
     if not validWidget(widget) then return end
-    form.openDialog({title=title,message=message,buttons={{label="Cancel",action=function() return true end},
+    FormLifecycle.openDialog({title=title,message=message,buttons={{label="Cancel",action=function() return true end},
         {label="Confirm",action=function()
             if not validWidget(widget) then return true end
             local currentKey=modelKey()
@@ -3812,7 +3829,7 @@ local function menu(widget)
             return action(...)
         end
     end
-    return rows
+    return FormLifecycle.relay(rows, true)
 end
 -- The small loader calls this only after the last GasDeck widget is destroyed,
 -- normally at a model switch. The flight count is already on the SD card; session

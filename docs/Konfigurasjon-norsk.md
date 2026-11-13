@@ -12,7 +12,7 @@ Samme ZIP brukes til begge installasjonsmåtene:
 
 Start ETHOS på nytt etter installasjonen. Ved første installasjon velger du
 **GasDeck** i et fullskjerms widgetfelt. Åpne **Configure widget** fra widgetmenyen
-og kontroller versjonen øverst. Suite viser denne versjonen som **26.11.2**.
+og kontroller versjonen øverst. Suite viser denne versjonen som **26.11.3**.
 Hvis installasjonen ikke vises oppdatert i Suite, gå ut av og inn i **Lua library**.
 Viser widgeten fortsatt en eldre versjon etter omstart, koble til radioen igjen,
 fjern bare `/scripts/GasDeck/main.luac` og start ETHOS på nytt.

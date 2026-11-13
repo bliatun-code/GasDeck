@@ -1,5 +1,10 @@
 # GasDeck change log
 
+## 2026.11-v3 - 2026-11-13
+
+- Opening the widget menu or one of its dialogs no longer keeps GasDeck in memory after you switch to a model without it.
+- Settings, sensors, menus and flight counts are unchanged.
+
 ## 2026.11-v2 - 2026-11-13
 
 - GasDeck loads only for models that use it and frees its memory when you switch to another model. The flight count stays saved; last-flight statistics and graphs are cleared at the switch.
