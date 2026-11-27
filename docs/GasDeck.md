@@ -113,9 +113,12 @@ it does not reset the sensors, flight count or fuel estimate.
 Reuse the model's selected image path; fitting preserves aspect ratio. At 800 x 480,
 the image area is about 277 x 156 pixels. **320 x 180** is a good 16:9 illustration size
 for this GasDeck panel; 290 x 191 also works with different unused margins.
-An 800 x 480 image exceeds the widget's image-size limit.
-Use ETHOS-compatible RGB/RGBA 8-bit PNG, not palette/16-bit PNG.
-Large image dimensions can use too much radio memory even when the PNG file is small.
+A picture can have at most 160,000 pixels. An 800 x 480 image is over that limit,
+and the picture area then shows "Max 160k pixels; try 290x191".
+In FrSky Suite's Image manager, set Output size to **480 x 320** or **480 x 272**,
+not the 800 x 480 that may be marked Recommended. The BMP file it saves works.
+An RGB/RGBA 8-bit PNG also works, but not palette/16-bit PNG.
+A larger picture uses more radio memory and does not look sharper in this area.
 The example artwork is optional; you can use your model's own picture.
 Leave **Font file** (Advanced settings) blank to use the radio's native fonts.
 

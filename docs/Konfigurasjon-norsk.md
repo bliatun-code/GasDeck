@@ -321,8 +321,10 @@ MAX viser høyeste observerte verdi. Temperaturgrensene legges inn i °C,
 også når temperaturen vises i Fahrenheit.
 
 Bakgrunn kan være **Radio theme**, **Black** eller **Custom**.
-Gyllen aksent er normalfargen. Bruk et RGB/RGBA 8-bit PNG-modellbilde;
-store dimensjoner krever mer minne. Se [bilde- og fontoppsett](GasDeck.md#model-image-and-fonts).
+Gyllen aksent er normalfargen. Modellbildet kan være en BMP-fil fra Image manager
+i FrSky Suite eller en RGB/RGBA 8-bit PNG, med høyst 160 000 piksler.
+Velg **480 × 320** eller **480 × 272** under **Output size** i Image manager;
+800 × 480, som kan være merket Recommended, er for stort. Se [bilde- og fontoppsett](GasDeck.md#model-image-and-fonts).
 
 WAV-filer bør være PCM, 32 kHz, mono, 16-bit. Repeat interval er 1–600 sekunder;
 varsler venter til aktuell lyd er ferdig. Preview spiller ingen varsler.
@@ -405,6 +407,7 @@ fortsetter hele tiden.
 | Ukjent fuel etter flowgap | Tapt forbruk kan ikke gjenskapes; bekreft faktisk ny fylling |
 | Ingen flytelling | Enable log, tenning, gassverdier og kvalifiseringskrav; diagnose |
 | Tenning OFF avslutter ikke flygingen | Kontroller at valgt tenningskilde gir gyldig OFF; ukjent status pauser bare |
-| Bilde mangler | Modellsti, RGB/RGBA 8-bit PNG og passende størrelse; Suite Image Manager |
+| Bilde mangler | Modellsti; BMP fra Suite Image manager eller RGB/RGBA 8-bit PNG |
+| «Max 160k pixels; try 290x191» | Bildet er for stort. Velg 480 × 320 eller 480 × 272 under Output size i Suite Image manager, ikke 800 × 480 |
 
 [Installasjon](GasDeck.md) | [Startside](../README.md)

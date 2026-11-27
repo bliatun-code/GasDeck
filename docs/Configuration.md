@@ -312,8 +312,10 @@ MAX is the observed peak. Temperature warning/critical values are entered in °C
 also when the displayed unit is Fahrenheit.
 
 Background can follow **Radio theme**, be **Black** or use **Custom** colors.
-A golden accent is the normal palette. Use an RGB/RGBA 8-bit PNG model image;
-large dimensions consume more memory. See [image and font setup](GasDeck.md#model-image-and-fonts).
+A golden accent is the normal palette. The model image can be a BMP from
+FrSky Suite's Image manager or an RGB/RGBA 8-bit PNG, with at most 160,000 pixels.
+In Image manager, set **Output size** to **480 × 320** or **480 × 272**; the
+800 × 480 that may be marked Recommended is too large. See [image and font setup](GasDeck.md#model-image-and-fonts).
 
 WAV files should be PCM, 32 kHz, mono, 16-bit. Repeat interval is 1–600 seconds;
 alerts wait for the current sound to finish. Preview plays no alerts.
@@ -397,6 +399,7 @@ logging continue throughout.
 | Unknown fuel after a flow gap | Missing consumption cannot be recovered; confirm an actual refill |
 | No counted flight | Enable log, ignition, throttle endpoints and qualification gates; diagnostics |
 | Ignition OFF does not complete the flight | Check that the selected ignition source reports valid OFF; unknown status only pauses |
-| No image | Model path, RGB/RGBA 8-bit PNG and suitable dimensions; Suite Image Manager |
+| No image | Model path; BMP from Suite Image manager or RGB/RGBA 8-bit PNG |
+| "Max 160k pixels; try 290x191" | The picture is too large. In Suite Image manager, set Output size to 480 × 320 or 480 × 272, not 800 × 480 |
 
 [Installation](GasDeck.md) | [Home](../README.md)
